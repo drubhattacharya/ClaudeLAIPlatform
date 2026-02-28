@@ -1,0 +1,1669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Language Access Index — 3-Tier Assessment Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --navy:   #0c1e35;
+  --navy2:  #132a46;
+  --teal:   #0e9e8c;
+  --teal2:  #0cc5ad;
+  --amber:  #d48e1a;
+  --red:    #c94040;
+  --green:  #18a76f;
+  --slate:  #4a637d;
+  --silver: #8aacbf;
+  --ice:    #e8f4fa;
+  --fog:    #f3f7fb;
+  --white:  #ffffff;
+  --bd:     rgba(12,30,53,.11);
+  --sh:     0 2px 16px rgba(12,30,53,.08);
+  --r:      12px;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'DM Sans',sans-serif; background:var(--fog); color:var(--navy); font-size:14.5px; line-height:1.5; }
+
+/* ─── HEADER ─── */
+.hdr { background:var(--navy); position:sticky; top:0; z-index:200; box-shadow:0 2px 16px rgba(0,0,0,.28); }
+.hdr-inner { max-width:1380px; margin:0 auto; padding:0 24px; height:58px; display:flex; align-items:center; gap:20px; }
+.hdr-brand { font-family:'Instrument Serif',serif; font-size:20px; color:var(--teal2); letter-spacing:-.2px; flex-shrink:0; }
+.hdr-brand span { font-size:11.5px; color:rgba(255,255,255,.4); font-family:'DM Sans',sans-serif; font-weight:400; margin-left:10px; letter-spacing:.3px; }
+.hdr-tabs { display:flex; gap:4px; flex:1; }
+.htab { font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:8px; border:none; cursor:pointer; background:rgba(255,255,255,.07); color:rgba(255,255,255,.55); transition:all .15s; white-space:nowrap; }
+.htab:hover { background:rgba(255,255,255,.14); color:rgba(255,255,255,.8); }
+.htab.active { background:rgba(14,158,140,.22); color:var(--teal2); }
+.htab .tier-num { font-size:10px; font-weight:700; letter-spacing:.5px; opacity:.7; display:block; }
+.hdr-mode { font-size:11.5px; color:rgba(255,255,255,.4); margin-left:auto; white-space:nowrap; flex-shrink:0; }
+.hdr-mode.t3 { color:var(--teal2); }
+
+/* ─── LAYOUT ─── */
+.wrap { max-width:1380px; margin:0 auto; padding:20px 24px 60px; }
+.view { display:none; }
+.view.active { display:block; }
+
+/* ─── TOAST ─── */
+.toast { display:none; border-radius:var(--r); padding:10px 16px; margin-bottom:14px; font-size:13px; }
+.toast.err { background:rgba(201,64,64,.08); border:1px solid rgba(201,64,64,.25); color:#8a1e1e; }
+.toast.ok  { background:rgba(24,167,111,.08); border:1px solid rgba(24,167,111,.25); color:#0d6644; }
+.toast.vis { display:block; }
+
+/* ─── CARDS ─── */
+.card { background:var(--white); border:1px solid var(--bd); border-radius:var(--r); box-shadow:var(--sh); overflow:hidden; }
+.card-hd { padding:13px 18px 11px; border-bottom:1px solid var(--bd); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.card-hd h2 { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--slate); }
+.card-bd { padding:18px; }
+.card-ft { padding:12px 18px; border-top:1px solid var(--bd); background:var(--fog); }
+
+/* ─── BUTTONS ─── */
+.btn { font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer; border:1px solid var(--bd); background:var(--white); color:var(--slate); transition:all .14s; }
+.btn:hover { background:var(--ice); border-color:var(--teal); color:var(--teal); }
+.btn.pri { background:var(--navy); color:var(--white); border-color:var(--navy); }
+.btn.pri:hover { background:var(--navy2); }
+.btn.teal { background:var(--teal); color:var(--white); border-color:var(--teal); }
+.btn.teal:hover { background:var(--teal2); border-color:var(--teal2); }
+.btn.ghost { background:transparent; border-color:rgba(255,255,255,.2); color:rgba(255,255,255,.7); }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+.btnrow { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+/* ─── TIER 1: LAYOUT ─── */
+.t1-layout { display:flex; flex-direction:column; gap:14px; }
+.t1-columns { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
+@media(max-width:1100px){ .t1-columns { grid-template-columns:1fr; } }
+
+/* ─── TIER 1: ODOMETER GAUGE HERO ─── */
+.odo-hero { background:linear-gradient(155deg, #071626 0%, #0d2140 55%, #0a1d38 100%); border-radius:var(--r); padding:22px 32px 20px; position:relative; overflow:hidden; display:grid; grid-template-columns:auto 1fr auto; gap:0 28px; align-items:start; }
+.odo-hero-gauge { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.odo-hero-mid   { display:flex; flex-direction:column; justify-content:center; gap:10px; padding-top:8px; }
+.odo-hero-right { display:flex; flex-direction:column; gap:10px; padding-top:8px; min-width:200px; }
+@media(max-width:900px){ .odo-hero { grid-template-columns:1fr; } .odo-hero-right { display:none; } }
+/* On wide screens the banner has the bar chart — hide sidebar duplicate */
+@media(min-width:901px){ .t1-sidebar-chart { display:none; } }
+.odo-hero::before { content:""; position:absolute; inset:0; background:radial-gradient(ellipse 70% 50% at 50% -10%, rgba(12,197,173,.15) 0%, transparent 65%); pointer-events:none; }
+.odo-hero::after  { content:""; position:absolute; bottom:-40px; left:50%; transform:translateX(-50%); width:260px; height:80px; background:radial-gradient(ellipse, rgba(12,197,173,.08) 0%, transparent 70%); pointer-events:none; }
+.odo-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:rgba(255,255,255,.3); margin-bottom:2px; text-align:center; }
+.odo-gauge-wrap { position:relative; display:flex; justify-content:center; height:186px; }
+.odo-gauge-wrap canvas { display:block; }
+.odo-center { position:absolute; bottom:6px; left:50%; transform:translateX(-50%); text-align:center; pointer-events:none; }
+.odo-score { font-family:'Instrument Serif',serif; font-size:54px; line-height:1; letter-spacing:-2px; transition:color .5s; }
+.odo-sub { font-size:11.5px; font-weight:600; color:rgba(255,255,255,.45); margin-top:2px; white-space:nowrap; letter-spacing:.2px; }
+.odo-zone-labels { display:flex; justify-content:space-between; padding:0 14px; margin-top:-4px; }
+.oz-label { font-size:9.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; opacity:.5; }
+.oz-red   { color:#f08080; }
+.oz-amber { color:#f5c84a; }
+.oz-green { color:#5de8c0; }
+.odo-band { margin-top:11px; border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.55; }
+.odo-band.good { background:rgba(24,167,111,.13); color:#a8f0d8; border:1px solid rgba(24,167,111,.22); }
+.odo-band.warn { background:rgba(212,142,26,.13); color:#f5d68a; border:1px solid rgba(212,142,26,.22); }
+.odo-band.bad  { background:rgba(201,64,64,.13);  color:#f5a5a5; border:1px solid rgba(201,64,64,.22); }
+.odo-band strong { display:block; font-size:12.5px; margin-bottom:3px; }
+.odo-stats { display:flex; align-items:stretch; margin-top:11px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:9px; overflow:hidden; }
+.odo-stat { flex:1; padding:9px 12px; text-align:center; }
+.odo-stat-div { width:1px; background:rgba(255,255,255,.1); }
+.odo-stat-n { font-family:'Instrument Serif',serif; font-size:22px; line-height:1; }
+.odo-stat-l { font-size:10px; color:rgba(255,255,255,.38); margin-top:3px; letter-spacing:.2px; text-transform:uppercase; }
+.opp-list { margin-top:12px; display:flex; flex-direction:column; gap:5px; }
+.opp-item { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:7px; padding:8px 11px; }
+.opp-rank { font-size:10.5px; font-weight:800; color:var(--teal2); width:20px; flex-shrink:0; }
+.opp-name { font-size:12.5px; font-weight:600; color:rgba(255,255,255,.82); flex:1; }
+.opp-score { font-size:12px; font-weight:700; }
+.opp-score.bad { color:#e07070; }
+.opp-score.warn { color:#f0b84a; }
+
+/* ─── PILLARS ─── */
+.pillars-wrap { margin-top:14px; display:flex; flex-direction:column; gap:7px; }
+.pillar { border:1px solid var(--bd); border-radius:var(--r); overflow:hidden; background:var(--white); }
+.pillar-hd { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; user-select:none; transition:background .13s; }
+.pillar-hd:hover { background:var(--fog); }
+.pillar.open .pillar-hd { background:var(--ice); }
+.p-num { font-size:11px; font-weight:700; color:var(--silver); width:18px; flex-shrink:0; }
+.p-name { font-size:13.5px; font-weight:600; color:var(--navy); flex:1; }
+.p-chip { font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:6px; }
+.chip-strong { background:rgba(14,158,140,.1); color:var(--teal); }
+.chip-found  { background:rgba(74,99,125,.09); color:var(--slate); }
+.chip-norm   { background:rgba(212,142,26,.1); color:#8a6010; }
+.chip-interv { background:rgba(74,99,125,.09); color:var(--slate); }
+.p-badge { font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px; min-width:54px; text-align:center; }
+.badge-good { background:rgba(24,167,111,.1); color:var(--green); border:1px solid rgba(24,167,111,.2); }
+.badge-warn { background:rgba(212,142,26,.1); color:var(--amber); border:1px solid rgba(212,142,26,.2); }
+.badge-bad  { background:rgba(201,64,64,.1);  color:var(--red);   border:1px solid rgba(201,64,64,.2); }
+.badge-neu  { background:var(--ice); color:var(--silver); border:1px solid var(--bd); }
+.p-chev { width:16px; height:16px; color:var(--silver); transition:transform .2s; flex-shrink:0; }
+.pillar.open .p-chev { transform:rotate(180deg); }
+.pillar-bd { display:none; padding:14px 14px 16px; border-top:1px solid var(--bd); background:#fafcfe; }
+.pillar.open .pillar-bd { display:block; }
+.p-ctx { font-size:12.5px; color:var(--slate); line-height:1.55; padding:10px 12px; background:var(--ice); border-radius:8px; border-left:3px solid var(--teal); margin-bottom:12px; }
+.metrics-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:600px){ .metrics-2 { grid-template-columns:1fr; } }
+.mfield { background:var(--white); border:1px solid var(--bd); border-radius:10px; padding:11px 12px; }
+.mfield .mlabel { font-size:12px; font-weight:600; color:var(--navy); line-height:1.4; margin-bottom:7px; }
+.mfield .munit { font-size:11px; color:var(--silver); font-weight:400; margin-left:4px; }
+.mfield .mread { font-size:11.5px; font-weight:600; color:var(--teal); margin-top:5px; }
+.mfield .mhint { font-size:11px; color:var(--silver); margin-top:4px; }
+.mfield .mwt   { font-size:10.5px; color:var(--silver); margin-top:2px; }
+input[type=range] { -webkit-appearance:none; width:100%; height:5px; background:var(--ice); border-radius:999px; outline:none; margin-top:4px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--teal); cursor:pointer; box-shadow:0 1px 4px rgba(14,158,140,.35); }
+select,input[type=number] { width:100%; padding:7px 10px; border:1px solid var(--bd); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--navy); background:var(--white); outline:none; margin-top:3px; }
+select:focus,input[type=number]:focus { border-color:var(--teal); }
+.p-guide { margin-top:10px; padding:10px 12px; background:#fffbf0; border:1px solid rgba(212,142,26,.2); border-radius:8px; font-size:12px; color:#6a4c08; line-height:1.55; }
+.p-guide strong { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#9a6e12; margin-bottom:3px; }
+
+/* right sidebar */
+.t1-sidebar { position:sticky; top:78px; display:flex; flex-direction:column; gap:12px; }
+.stage-block { padding:14px 16px; }
+.stage-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--silver); margin-bottom:8px; }
+.stage-row { display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid var(--bd); }
+.stage-row:last-child { border-bottom:none; }
+.stage-num { font-size:11px; font-weight:700; color:var(--silver); width:52px; flex-shrink:0; }
+.stage-name { font-size:13px; font-weight:600; flex:1; }
+.stage-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.stage-row.current .stage-name { color:var(--teal); }
+.stage-row.current .stage-dot { background:var(--teal); box-shadow:0 0 6px rgba(14,158,140,.5); }
+.stage-row.met .stage-dot { background:rgba(24,167,111,.4); }
+.stage-row .stage-dot:not(.met):not(.current) { background:var(--bd); }
+
+/* ─── TIER 2: HYPOTHESIS ─── */
+.t2-layout { display:grid; grid-template-columns:340px 1fr; gap:16px; align-items:start; }
+@media(max-width:1050px){ .t2-layout { grid-template-columns:1fr; } }
+.pillar-nav { display:flex; flex-direction:column; gap:4px; }
+.pnav-btn { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; border:1px solid transparent; cursor:pointer; background:transparent; text-align:left; transition:all .13s; width:100%; font-family:'DM Sans',sans-serif; }
+.pnav-btn:hover { background:var(--ice); border-color:var(--bd); }
+.pnav-btn.active { background:var(--ice); border-color:var(--teal); }
+.pnav-num { font-size:11px; font-weight:700; color:var(--silver); width:18px; flex-shrink:0; }
+.pnav-name { font-size:13px; font-weight:600; color:var(--navy); flex:1; }
+.pnav-score { font-size:12px; font-weight:700; }
+.t2-main { display:flex; flex-direction:column; gap:14px; }
+.t2-score-row { display:flex; gap:12px; }
+.t2-score-box { flex:1; padding:14px 16px; background:var(--fog); border:1px solid var(--bd); border-radius:var(--r); }
+.t2-score-box .l { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--silver); margin-bottom:6px; }
+.t2-score-box .v { font-family:'Instrument Serif',serif; font-size:28px; line-height:1; }
+.t2-score-box .s { font-size:12.5px; color:var(--slate); margin-top:4px; }
+/* Hypothesis builder */
+.hyp-section { padding:18px; }
+.hyp-intro { font-size:13px; color:var(--slate); line-height:1.6; margin-bottom:16px; padding:12px 14px; background:var(--ice); border-radius:8px; border-left:3px solid var(--teal); }
+.hyp-prompts { display:flex; flex-direction:column; gap:10px; }
+.hyp-prompt-item { border:1px solid var(--bd); border-radius:10px; overflow:hidden; }
+.hyp-q { display:flex; align-items:flex-start; gap:10px; padding:13px 14px; background:var(--white); }
+.hyp-q-num { font-size:11.5px; font-weight:800; color:var(--teal); flex-shrink:0; padding-top:1px; width:20px; }
+.hyp-q-text { font-size:13.5px; color:var(--navy); line-height:1.5; font-weight:500; flex:1; }
+.hyp-input-wrap { padding:10px 14px 12px; background:#fafcfe; border-top:1px solid var(--bd); }
+.hyp-input-wrap label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--silver); display:block; margin-bottom:6px; }
+.hyp-input-wrap textarea { width:100%; min-height:70px; padding:9px 11px; border:1px solid var(--bd); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--navy); background:var(--white); outline:none; resize:vertical; line-height:1.5; transition:border-color .14s; }
+.hyp-input-wrap textarea:focus { border-color:var(--teal); }
+.hyp-input-wrap textarea::placeholder { color:var(--silver); }
+.hyp-actions { padding:14px 18px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; border-top:1px solid var(--bd); }
+.hyp-saved-note { font-size:12px; color:var(--green); font-weight:600; opacity:0; transition:opacity .3s; }
+.hyp-saved-note.show { opacity:1; }
+.hyp-evidence-link { font-size:12.5px; color:var(--teal); font-weight:600; }
+
+/* ─── TIER 3: PERFORMANCE ─── */
+.t3-layout { display:flex; flex-direction:column; gap:16px; }
+/* Upload zone */
+.upload-zone { border:2px dashed rgba(14,158,140,.35); border-radius:var(--r); padding:28px 24px; text-align:center; background:rgba(14,158,140,.03); transition:all .2s; cursor:pointer; }
+.upload-zone:hover,.upload-zone.drag { border-color:var(--teal); background:rgba(14,158,140,.07); }
+.upload-icon { font-size:36px; margin-bottom:10px; }
+.upload-zone h3 { font-family:'Instrument Serif',serif; font-size:20px; font-weight:400; color:var(--navy); margin-bottom:6px; }
+.upload-zone p { font-size:13px; color:var(--slate); max-width:480px; margin:0 auto 14px; line-height:1.55; }
+.upload-zone input[type=file] { display:none; }
+.upload-status-bar { padding:12px 16px; border-radius:var(--r); border:1px solid var(--bd); background:var(--white); display:flex; align-items:center; gap:12px; font-size:13px; }
+.upload-status-bar.loaded { border-color:rgba(24,167,111,.3); background:rgba(24,167,111,.04); }
+.us-dot { width:10px; height:10px; border-radius:50%; background:var(--silver); flex-shrink:0; }
+.us-dot.loaded { background:var(--green); box-shadow:0 0 6px rgba(24,167,111,.4); }
+.us-text { flex:1; }
+.us-meta { font-size:12px; color:var(--slate); }
+
+/* Tier 3 content grid */
+.t3-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:1050px){ .t3-grid { grid-template-columns:1fr; } }
+.t3-full { grid-column:1/-1; }
+
+/* Tables */
+table.dtbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.dtbl th { background:var(--navy); color:rgba(255,255,255,.8); padding:8px 11px; text-align:left; font-size:11.5px; font-weight:600; letter-spacing:.2px; }
+table.dtbl td { padding:8px 11px; border-bottom:1px solid var(--bd); vertical-align:top; color:var(--slate); }
+table.dtbl tr:nth-child(even) td { background:var(--fog); }
+table.dtbl td:first-child { font-weight:600; color:var(--navy); }
+table.dtbl td.delta.pos { color:var(--green); font-weight:700; }
+table.dtbl td.delta.neg { color:var(--red); font-weight:700; }
+
+/* Scope filters */
+.filters-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; padding:14px 16px; border-bottom:1px solid var(--bd); }
+.filter-field { display:flex; flex-direction:column; gap:4px; }
+.filter-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--silver); }
+.filter-field select { min-width:160px; max-width:220px; }
+
+/* Sim controls */
+.sim-field { background:var(--fog); border:1px solid var(--bd); border-radius:10px; padding:11px 12px; }
+.sim-field .slabel { font-size:12px; font-weight:600; color:var(--navy); margin-bottom:6px; display:flex; justify-content:space-between; }
+.sim-field .slabel span { font-weight:700; color:var(--teal); }
+
+/* Risk table */
+.risk-assumptions { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px; }
+.risk-inp { display:flex; flex-direction:column; gap:4px; }
+.risk-inp label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--silver); }
+.risk-inp input { width:110px; }
+
+/* Actions list */
+.actions-list { list-style:none; display:flex; flex-direction:column; gap:7px; }
+.actions-list li { display:flex; gap:10px; align-items:flex-start; padding:9px 11px; background:var(--fog); border:1px solid var(--bd); border-radius:8px; font-size:12.5px; color:var(--slate); line-height:1.5; }
+.actions-list li::before { content:"→"; color:var(--teal); font-weight:700; flex-shrink:0; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:32px 20px; }
+.empty-state .es-icon { font-size:32px; margin-bottom:10px; }
+.empty-state .es-head { font-family:'Instrument Serif',serif; font-size:18px; color:var(--navy); margin-bottom:6px; font-weight:400; }
+.empty-state .es-body { font-size:13px; color:var(--slate); max-width:360px; margin:0 auto; line-height:1.6; }
+
+/* Advanced mode toggle */
+.toggle-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border:1px solid var(--bd); border-radius:999px; background:var(--white); font-size:12.5px; font-weight:600; color:var(--slate); cursor:pointer; user-select:none; }
+.toggle-chip input { accent-color:var(--teal); }
+.toggle-chip.active { border-color:var(--teal); color:var(--teal); background:rgba(14,158,140,.06); }
+
+/* Pillar drilldown selector */
+.drill-select-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--bd); }
+.drill-select-row label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--silver); flex-shrink:0; }
+.drill-select-row select { flex:1; max-width:320px; }
+.drill-context { font-size:12.5px; color:var(--slate); padding:10px 14px; border-bottom:1px solid var(--bd); line-height:1.55; }
+
+/* Sim mode indicator */
+.sim-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+.sim-badge.on { background:rgba(212,142,26,.1); border:1px solid rgba(212,142,26,.25); color:var(--amber); }
+.sim-badge.off { background:var(--ice); border:1px solid var(--bd); color:var(--silver); }
+
+/* Template info */
+.template-info { font-size:12px; color:var(--slate); line-height:1.6; padding:12px 14px; background:var(--ice); border-radius:8px; }
+.template-info code { font-family:ui-monospace,'Courier New',monospace; font-size:11px; background:rgba(12,30,53,.07); padding:1px 4px; border-radius:3px; }
+
+/* Section headings */
+.sec-head { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--silver); margin-bottom:10px; }
+
+/* Comparison row */
+.cmp-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.cmp-field { display:flex; flex-direction:column; gap:4px; }
+.cmp-field label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--silver); }
+.cmp-field select { min-width:180px; }
+
+/* Scrollable table container */
+.tbl-scroll { overflow-x:auto; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.pillar { animation:fadeUp .25s ease both; }
+.pillar:nth-child(1){animation-delay:.02s}.pillar:nth-child(2){animation-delay:.04s}
+.pillar:nth-child(3){animation-delay:.06s}.pillar:nth-child(4){animation-delay:.08s}
+.pillar:nth-child(5){animation-delay:.10s}.pillar:nth-child(6){animation-delay:.12s}
+.pillar:nth-child(7){animation-delay:.14s}.pillar:nth-child(8){animation-delay:.16s}
+.pillar:nth-child(9){animation-delay:.18s}.pillar:nth-child(10){animation-delay:.20s}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-brand">LAI <span>Language Access Index · 3-Tier Assessment Platform</span></div>
+    <div class="hdr-tabs">
+      <button class="htab active" id="tab_t1" data-view="t1">
+        <span class="tier-num">TIER 1</span>Self-Assessment
+      </button>
+      <button class="htab" id="tab_t2" data-view="t2">
+        <span class="tier-num">TIER 2</span>Hypothesis Builder
+      </button>
+      <button class="htab" id="tab_t3" data-view="t3">
+        <span class="tier-num">TIER 3</span>Performance Review
+      </button>
+    </div>
+    <div class="hdr-mode" id="hdr_mode">Mode: Manual (Tier 1 proxy)</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="toast_err" class="toast err"></div>
+  <div id="toast_ok"  class="toast ok"></div>
+
+  <!-- ══════════════════════ TIER 1 ══════════════════════ -->
+  <section id="view_t1" class="view active">
+    <div class="t1-layout">
+
+      <!-- ── FULL-WIDTH GAUGE BANNER ── -->
+      <div class="odo-hero">
+        <!-- Left: gauge -->
+        <div class="odo-hero-gauge">
+          <div class="odo-label">LAI Preparedness Pulse</div>
+          <div class="odo-gauge-wrap">
+            <canvas id="odo_canvas" width="300" height="178"></canvas>
+            <div class="odo-center">
+              <div class="odo-score" id="t1_lai">—</div>
+              <div class="odo-sub" id="t1_tier">Calculating…</div>
+            </div>
+          </div>
+          <div class="odo-zone-labels" style="width:300px;">
+            <span class="oz-label oz-red">Critical</span>
+            <span class="oz-label oz-amber">Developing</span>
+            <span class="oz-label oz-green">Strong</span>
+          </div>
+        </div>
+
+        <!-- Middle: band + opps -->
+        <div class="odo-hero-mid">
+          <div class="odo-band" id="t1_band_block">—</div>
+          <div class="odo-stats">
+            <div class="odo-stat">
+              <div class="odo-stat-n" id="t1_risk_n">—</div>
+              <div class="odo-stat-l">Risk signal</div>
+            </div>
+            <div class="odo-stat-div"></div>
+            <div class="odo-stat">
+              <div class="odo-stat-n" id="t1_below60" style="color:#e07070;">—</div>
+              <div class="odo-stat-l">Pillars below 60</div>
+            </div>
+          </div>
+          <div class="opp-list" id="t1_opps"></div>
+        </div>
+
+        <!-- Right: pillar bar chart inline -->
+        <div class="odo-hero-right">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);margin-bottom:2px;">Pillar Breakdown</div>
+          <div id="chart_bar_t1_banner" style="width:100%;min-height:220px;"></div>
+        </div>
+      </div>
+
+      <!-- ── TWO-COLUMN BODY ── -->
+      <div class="t1-columns">
+        <!-- Left: pillars -->
+        <div>
+          <div class="btnrow" style="margin-bottom:12px;">
+            <button class="btn pri" id="btn_reset">↺ Reset defaults</button>
+            <button class="btn" id="btn_expand">Expand all</button>
+            <button class="btn" id="btn_collapse">Collapse all</button>
+            <button class="btn" id="btn_export_csv">Export scores CSV</button>
+          </div>
+          <div id="pillars_t1" class="pillars-wrap"></div>
+        </div>
+
+        <!-- Right: sidebar -->
+        <div class="t1-sidebar">
+          <!-- Bar chart (sidebar, hidden on wide screens when banner chart is visible) -->
+          <div class="card t1-sidebar-chart">
+            <div class="card-hd"><h2>Pillar Scores</h2></div>
+            <div id="chart_bar_t1" style="padding:6px 4px 2px;"></div>
+          </div>
+
+          <!-- Stage gating -->
+          <div class="card">
+            <div class="card-hd"><h2>Maturity Stage</h2><span id="t1_stage_cur" style="font-size:12px;font-weight:700;color:var(--teal);">—</span></div>
+            <div class="stage-block">
+              <div class="stage-label">Stage ladder — weakest pillar gates progress</div>
+              <div id="t1_stages"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════ TIER 2 ══════════════════════ -->
+  <section id="view_t2" class="view">
+    <div style="margin-bottom:14px;">
+      <div style="font-size:13px;color:var(--slate);line-height:1.6;max-width:760px;">
+        <strong style="color:var(--navy);">Tier 2 — Hypothesis Builder.</strong>
+        Each pillar's analytic prompts are designed to help you articulate what your data may reveal before testing it against real encounter-level evidence in Tier 3. Write your hypotheses in the response fields — they are preserved as you navigate between pillars.
+      </div>
+    </div>
+    <div class="t2-layout">
+      <!-- Pillar nav -->
+      <div class="card">
+        <div class="card-hd"><h2>Select Pillar</h2></div>
+        <div class="card-bd" style="padding:10px;">
+          <div class="pillar-nav" id="pillar_nav_t2"></div>
+        </div>
+      </div>
+
+      <!-- Main panel -->
+      <div class="t2-main">
+        <!-- Score boxes -->
+        <div class="t2-score-row">
+          <div class="t2-score-box">
+            <div class="l">Pillar Score</div>
+            <div class="v" id="t2_pillar_score">—</div>
+            <div class="s" id="t2_pillar_band">—</div>
+          </div>
+          <div class="t2-score-box">
+            <div class="l">Next Stage Gate</div>
+            <div class="v" id="t2_gate" style="color:var(--amber);">—</div>
+            <div class="s">Points needed to advance</div>
+          </div>
+          <div class="t2-score-box">
+            <div class="l">Evidence Density</div>
+            <div class="v" id="t2_evidence" style="font-size:14px;padding-top:6px;">—</div>
+            <div class="s" id="t2_evidence_sub">From manuscript Table 5</div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card">
+          <div class="card-hd"><h2 id="t2_pillar_title">Select a pillar</h2></div>
+          <div id="chart_t2_breakdown" style="padding:6px 4px 2px;"></div>
+        </div>
+
+        <!-- Hypothesis prompts -->
+        <div class="card">
+          <div class="card-hd">
+            <h2>Analytic Prompts & Hypothesis Response</h2>
+            <span style="font-size:12px;color:var(--slate);">Your responses are saved automatically</span>
+          </div>
+          <div class="hyp-section">
+            <div class="hyp-intro" id="t2_hyp_intro">Select a pillar to see its analytic prompts.</div>
+            <div class="hyp-prompts" id="t2_prompts"></div>
+          </div>
+          <div class="hyp-actions">
+            <div class="hyp-saved-note" id="t2_saved_note">✓ Responses saved</div>
+            <div class="btnrow">
+              <button class="btn teal" id="btn_t2_to_t3">Test hypotheses in Tier 3 →</button>
+              <button class="btn" id="btn_t2_clear">Clear responses</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ TIER 3 ══════════════════════ -->
+  <section id="view_t3" class="view">
+    <div class="t3-layout">
+      <!-- Upload -->
+      <div class="card">
+        <div class="card-hd"><h2>Data Upload</h2></div>
+        <div class="card-bd">
+          <div class="upload-zone" id="upload_zone" onclick="document.getElementById('file_input').click()">
+            <div class="upload-icon">📊</div>
+            <h3>Upload Encounter-Level Dataset</h3>
+            <p>Upload an <strong>.xlsx</strong> file with an <code>Encounter_Level_Data</code> sheet for full auto-computation, or a <code>LAI_Pillar_Metrics</code> sheet for pre-aggregated input. You can also upload a <strong>.csv</strong> with pillar metrics.</p>
+            <input type="file" id="file_input" accept=".xlsx,.xls,.csv"/>
+            <div class="btnrow" style="justify-content:center;gap:10px;">
+              <button class="btn teal" onclick="event.stopPropagation();document.getElementById('file_input').click()">Choose file</button>
+              <button class="btn" id="btn_dl_template" onclick="event.stopPropagation();downloadTemplate()">Download template</button>
+            </div>
+          </div>
+          <div class="template-info" style="margin-top:12px;">
+            <strong>Encounter_Level_Data sheet columns include:</strong>
+            <code>interpreter_requested</code>, <code>interpreter_delay_minutes</code>, <code>interpreter_required</code>, <code>teach_back_documented</code>, <code>section_1557_documented</code>, <code>adverse_event_flag</code>, <code>readmission_30d</code>, <code>service_line</code>, <code>unit_id</code>, <code>exemplar_type</code>, <code>preferred_language</code>, and more. Download the template for the full schema.
+          </div>
+        </div>
+        <div class="card-ft">
+          <div class="upload-status-bar" id="upload_status_bar">
+            <div class="us-dot" id="us_dot"></div>
+            <div class="us-text">
+              <div id="us_text">No file loaded — showing Tier 1 proxy scores</div>
+              <div class="us-meta" id="us_meta"></div>
+            </div>
+            <div class="btnrow">
+              <label class="toggle-chip" id="adv_chip">
+                <input type="checkbox" id="chk_advanced_mode"/> Advanced Case Mode (D2)
+              </label>
+              <button class="btn" id="btn_clear_upload" disabled>Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- T3 content (hidden until data loaded) -->
+      <div id="t3_empty" class="card">
+        <div class="empty-state">
+          <div class="es-icon">🔬</div>
+          <div class="es-head">Ready to analyze encounter-level evidence</div>
+          <div class="es-body">Upload an encounter dataset above. Once loaded, Tier 3 will auto-compute all 20 KPI scores from your data and unlock the drilldown, simulator, and comparison tools.</div>
+        </div>
+      </div>
+
+      <div id="t3_content" style="display:none;">
+        <!-- Score summary (mirrors Tier 1 but data-driven) -->
+        <div class="card t3-full">
+          <div class="card-hd">
+            <h2>Tier 3 — Computed Scores from Dataset</h2>
+            <div class="btnrow">
+              <div class="sim-badge" id="sim_badge">SIM OFF</div>
+              <label class="toggle-chip" id="sim_chip">
+                <input type="checkbox" id="chk_sim_mode"/> Simulation Mode
+              </label>
+              <button class="btn" id="btn_sim_reset">Reset sim</button>
+            </div>
+          </div>
+          <div style="padding:6px 4px 2px;" id="chart_t3_bar"></div>
+          <div class="card-ft">
+            <div id="t3_pillar_table_note" style="font-size:12px;color:var(--slate);margin-bottom:8px;"></div>
+            <div class="tbl-scroll">
+              <table class="dtbl" id="t3_pillar_table"></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope filters -->
+        <div class="card t3-full">
+          <div class="card-hd"><h2>Scope Filters</h2><span style="font-size:12px;color:var(--slate);">Recomputes Tier 3 from filtered encounters</span></div>
+          <div class="filters-row">
+            <div class="filter-field">
+              <label>Service Line</label>
+              <select id="flt_service_line"><option value="All">All</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Unit</label>
+              <select id="flt_unit_id"><option value="All">All</option></select>
+            </div>
+            <div class="filter-field">
+              <label>Exemplar / Diagnosis</label>
+              <select id="flt_exemplar"><option value="All">All</option></select>
+            </div>
+            <button class="btn teal" id="btn_apply_filters">Apply filters</button>
+            <button class="btn" id="btn_clear_filters">Clear</button>
+          </div>
+        </div>
+
+        <!-- Pillar drilldown + sim -->
+        <div class="card">
+          <div class="card-hd"><h2>Pillar Drilldown</h2></div>
+          <div class="drill-select-row">
+            <label>Select pillar</label>
+            <select id="t3_pillar_select"></select>
+          </div>
+          <div class="drill-context" id="t3_pillar_ctx">—</div>
+          <div class="card-bd">
+            <div class="sec-head">Component evidence (how KPI scores were computed)</div>
+            <div class="tbl-scroll">
+              <table class="dtbl" id="t3_component_table"></table>
+            </div>
+            <div style="margin-top:16px;">
+              <div class="sec-head">Top 3 recommended actions</div>
+              <ul class="actions-list" id="t3_actions_list"></ul>
+            </div>
+            <details style="margin-top:14px;border:1px solid var(--bd);border-radius:8px;padding:10px 12px;">
+              <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--slate);">Simulation controls — model workflow improvements</summary>
+              <div style="margin-top:10px;font-size:12px;color:var(--slate);margin-bottom:10px;line-height:1.55;">
+                Adjust component sliders to model what-if improvements. <strong>Enable Simulation Mode</strong> above to see the projected impact on KPI scores and LAI Pulse.
+              </div>
+              <div id="t3_sim_controls" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Service-line comparison -->
+        <div class="card">
+          <div class="card-hd"><h2>Service-Line Comparison</h2></div>
+          <div class="card-bd">
+            <div class="cmp-row" style="margin-bottom:12px;">
+              <div class="cmp-field">
+                <label>Compare A</label>
+                <select id="cmp_a"></select>
+              </div>
+              <div class="cmp-field">
+                <label>Compare B</label>
+                <select id="cmp_b"></select>
+              </div>
+              <button class="btn teal" id="btn_run_compare">Run comparison</button>
+            </div>
+            <div class="tbl-scroll">
+              <table class="dtbl" id="t3_compare_table"></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue at risk -->
+        <div class="card">
+          <div class="card-hd"><h2>Coding, Documentation & Revenue Risk</h2><span style="font-size:12px;color:var(--slate);">Educational estimate · CPT/HCPCS documentation sufficiency</span></div>
+          <div class="card-bd">
+            <div class="risk-assumptions">
+              <div class="risk-inp"><label>Avg $ at risk — Critical Care (99291)</label><input type="number" id="risk_amt_cc" value="250"/></div>
+              <div class="risk-inp"><label>GC/GE Teaching attestation</label><input type="number" id="risk_amt_teach" value="60"/></div>
+              <div class="risk-inp"><label>CCM per encounter</label><input type="number" id="risk_amt_ccm" value="45"/></div>
+              <div class="risk-inp"><label>TCM per encounter</label><input type="number" id="risk_amt_tcm" value="90"/></div>
+              <button class="btn" id="btn_recalc_risk">Recalculate</button>
+            </div>
+            <div class="sec-head">Risk summary</div>
+            <div class="tbl-scroll" style="margin-bottom:12px;"><table class="dtbl" id="coding_risk_table"></table></div>
+            <div class="sec-head">Revenue-at-risk estimate</div>
+            <div class="tbl-scroll"><table class="dtbl" id="revenue_risk_table"></table></div>
+            <div style="font-size:12px;color:var(--slate);margin-top:8px;" id="revenue_risk_note"></div>
+            <div style="margin-top:14px;">
+              <div class="sec-head">Correlation signals (encounter-level proxies)</div>
+              <div class="tbl-scroll"><table class="dtbl" id="coding_corr_table"></table></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /t3_content -->
+    </div>
+  </section>
+</div><!-- /wrap -->
+
+<script>
+"use strict";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function slugify(s){ return String(s).toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,""); }
+function clamp(x,lo=0,hi=100){ return Math.max(lo,Math.min(hi,x)); }
+function normKey(k){ return String(k||"").trim().toLowerCase(); }
+function yn(v){ const s=String(v??"").trim().toLowerCase(); if(s==="yes"||s==="y"||s==="true"||s==="1")return 1; if(s==="no"||s==="n"||s==="false"||s==="0")return 0; return null; }
+// ynOrPresent: for fields that may contain a language name (not Yes/No) where any non-empty value = 1
+function ynOrPresent(v){ const r=yn(v); if(r!==null)return r; const s=String(v??"").trim(); return(s===""||s.toLowerCase()==="n/a"||s.toLowerCase()==="none")?null:1; }
+function num(v){ const n=Number(v); return Number.isFinite(n)?n:null; }
+// mapTechLevel: converts text-based tech_integration_level ('Low','Medium','High') to 0-100 score
+function mapTechLevel(v){ const s=String(v??"").trim().toLowerCase(); const m={"low":1,"medium":3,"high":5}[s]; if(m!==undefined)return clamp(((m-1)/4)*100,0,100); const n=Number(v); return Number.isFinite(n)?clamp(((n-1)/4)*100,0,100):null; }
+function getField(row,name){ if(row[name]!==undefined)return row[name]; const t=normKey(name); const k=Object.keys(row).find(k=>normKey(k)===t); return k?row[k]:undefined; }
+function setText(id,t){ const e=document.getElementById(id); if(e)e.textContent=t; }
+function setHTML(id,h){ const e=document.getElementById(id); if(e)e.innerHTML=h; }
+function showToast(type,msg,ms=4000){ const e=document.getElementById(`toast_${type}`); if(!e)return; e.innerHTML=msg; e.classList.add("vis"); setTimeout(()=>e.classList.remove("vis"),ms); }
+function uniq(arr){ return Array.from(new Set(arr.filter(x=>x!==null&&x!==undefined&&String(x).trim()!==""))).sort((a,b)=>String(a).localeCompare(String(b))); }
+function weightedMean(vals,w){ let sw=0,sx=0; for(let i=0;i<vals.length;i++){ if(vals[i]===null||!Number.isFinite(w[i])||w[i]<=0)continue; sw+=w[i];sx+=w[i]*vals[i];} return sw>0?sx/sw:null; }
+function weightedRate(ind,w){ const m=weightedMean(ind,w); return m===null?null:100*m; }
+function weightedMedian(vals,w){ const pairs=[]; for(let i=0;i<vals.length;i++){if(vals[i]===null||!Number.isFinite(vals[i])||!Number.isFinite(w[i])||w[i]<=0)continue;pairs.push([vals[i],w[i]]);} if(!pairs.length)return null; pairs.sort((a,b)=>a[0]-b[0]); const tw=pairs.reduce((a,b)=>a+b[1],0); let cum=0; for(const[v,ww]of pairs){cum+=ww;if(cum>=tw/2)return v;} return pairs[pairs.length-1][0]; }
+function pearson(xs,ys){ const pairs=[]; for(let i=0;i<xs.length;i++){const x=xs[i],y=ys[i];if(x===null||y===null||!Number.isFinite(x)||!Number.isFinite(y))continue;pairs.push([x,y]);} if(pairs.length<5)return null; const n=pairs.length; const mx=pairs.reduce((s,p)=>s+p[0],0)/n,my=pairs.reduce((s,p)=>s+p[1],0)/n; let cov=0,vx=0,vy=0; for(const[x,y]of pairs){cov+=(x-mx)*(y-my);vx+=(x-mx)**2;vy+=(y-my)**2;} if(vx<=0||vy<=0)return null; return cov/Math.sqrt(vx*vy); }
+function scoreColor(s){ return s>=80?"var(--green)":s<60?"var(--red)":"var(--amber)"; }
+function badgeClass(s){ return s>=80?"badge-good":s<60?"badge-bad":"badge-warn"; }
+
+// ─── ODOMETER GAUGE ───────────────────────────────────────────────────────────
+let _odoTarget = 0, _odoCurrent = 0, _odoRaf = null;
+
+function drawOdometer(score) {
+  const canvas = document.getElementById("odo_canvas");
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = 340, H = 200;
+  canvas.width  = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H - 26;
+  const R = 146;
+  // 220° sweep: start 215° (from 3-o'clock clockwise), span 250° — wide classic speedometer
+  const DEG = Math.PI / 180;
+  const ARC_START = 215 * DEG;
+  const ARC_SPAN  = 250 * DEG;
+  function sToA(s) { return ARC_START + (s / 100) * ARC_SPAN; }
+  const trackW = 17;
+
+  // Background track
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, ARC_START, ARC_START + ARC_SPAN, false);
+  ctx.strokeStyle = "rgba(255,255,255,.06)";
+  ctx.lineWidth = trackW + 4;
+  ctx.lineCap = "butt";
+  ctx.stroke();
+
+  // Colour zone fills (dim)
+  [{from:0,to:60,c:"#c94040"},{from:60,to:80,c:"#c47a10"},{from:80,to:100,c:"#18a76f"}].forEach(z => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, sToA(z.from), sToA(z.to), false);
+    ctx.strokeStyle = z.c;
+    ctx.lineWidth = trackW;
+    ctx.globalAlpha = 0.22;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Active filled arc
+  if (score > 0.2) {
+    const grad = ctx.createLinearGradient(cx - R, cy, cx + R, cy);
+    if (score >= 80)      { grad.addColorStop(0,"#1a7060"); grad.addColorStop(1,"#0cc5ad"); }
+    else if (score >= 60) { grad.addColorStop(0,"#8a5a10"); grad.addColorStop(1,"#f5c020"); }
+    else                  { grad.addColorStop(0,"#7a1e1e"); grad.addColorStop(1,"#e05050"); }
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, ARC_START, sToA(score), false);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = trackW;
+    ctx.globalAlpha = 0.9;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Leading glow dot
+    const da = sToA(score);
+    const activeC = score>=80?"#0cc5ad":score>=60?"#f5c020":"#e05050";
+    ctx.beginPath();
+    ctx.arc(cx + R*Math.cos(da), cy + R*Math.sin(da), 5.5, 0, Math.PI*2);
+    ctx.fillStyle = activeC;
+    ctx.shadowColor = activeC; ctx.shadowBlur = 16; ctx.fill(); ctx.shadowBlur = 0;
+  }
+
+  // Tick marks + labels
+  for (let v = 0; v <= 100; v += 5) {
+    const major = v % 20 === 0;
+    const a = sToA(v);
+    const ri = R - (major ? 11 : 5), ro = R + (major ? 11 : 5);
+    ctx.beginPath();
+    ctx.moveTo(cx + ri*Math.cos(a), cy + ri*Math.sin(a));
+    ctx.lineTo(cx + ro*Math.cos(a), cy + ro*Math.sin(a));
+    ctx.strokeStyle = major ? "rgba(255,255,255,.48)" : "rgba(255,255,255,.16)";
+    ctx.lineWidth = major ? 1.6 : 0.8;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    if (major) {
+      const lr = R + 24;
+      ctx.font = "600 10px 'DM Sans',sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,.32)";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(v, cx + lr*Math.cos(a), cy + lr*Math.sin(a));
+    }
+  }
+
+  // Needle
+  const na = sToA(score);
+  const nLen = R - trackW - 6;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(na);
+  // Subtle shadow
+  ctx.beginPath(); ctx.moveTo(-6,2); ctx.lineTo(nLen,2);
+  ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 2.5; ctx.stroke();
+  // Needle body
+  ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(nLen, 0);
+  const needleC = score>=80?"#0cc5ad":score>=60?"#f5c020":"#e06060";
+  ctx.strokeStyle = needleC;
+  ctx.lineWidth = 2.2;
+  ctx.shadowColor = needleC; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
+  // Arrowhead
+  ctx.beginPath(); ctx.moveTo(nLen,0); ctx.lineTo(nLen-13,-3.5); ctx.lineTo(nLen-13,3.5); ctx.closePath();
+  ctx.fillStyle = needleC; ctx.shadowColor = needleC; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // Hub
+  const hg = ctx.createRadialGradient(cx,cy,0,cx,cy,13);
+  hg.addColorStop(0,"#2a4a6a"); hg.addColorStop(1,"#091b30");
+  ctx.beginPath(); ctx.arc(cx,cy,13,0,Math.PI*2);
+  ctx.fillStyle = hg; ctx.fill();
+  const hubC = score>=80?"#0cc5ad":score>=60?"#f5c020":"#e06060";
+  ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fillStyle = hubC; ctx.shadowColor = hubC; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+}
+
+function animateOdometer(target) {
+  if (_odoRaf) cancelAnimationFrame(_odoRaf);
+  _odoTarget = target;
+  const from = _odoCurrent, diff = target - from;
+  if (Math.abs(diff) < 0.25) { drawOdometer(target); return; }
+  const t0 = performance.now(), dur = 700;
+  function step(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    _odoCurrent = from + diff * e;
+    drawOdometer(_odoCurrent);
+    const el = document.getElementById("t1_lai");
+    if (el) el.textContent = Math.round(_odoCurrent) + "/100";
+    if (p < 1) { _odoRaf = requestAnimationFrame(step); }
+    else { _odoCurrent = target; drawOdometer(target); }
+  }
+  _odoRaf = requestAnimationFrame(step);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA SCHEMA
+// ─────────────────────────────────────────────────────────────────────────────
+const PILLAR_ORDER = ["Access","Patient Experience","Outcomes","Compliance","Patient Engagement","Financial Stewardship","Quality and Safety","Workforce Development","Workflow Optimization","Technology Innovation"];
+
+const METRICS = {
+  "Access":{
+    evidence:"Mixed empirical + normative", evClass:"chip-norm",
+    context:"Measures ED interpreter wait time performance (target ≤10 min, per NY 10 N.Y.C.R.R. §405.7; Valderrama et al., 2021) and physician language alignment with the local LEP service area population (Diamond et al., 2020).",
+    guidance:"Establish a real-time interpreter dispatch system with documented time-to-service metrics. Conduct a workforce language alignment gap analysis against your ZIP-code-level LEP population data.",
+    m1:{label:"Interpreter/QBS wait time in ED",input:"band",units:"min",bands:[["Under 10 min (ideal)",100],["10–15 min",80],["15–20 min",60],["20–25 min",40],[">25 min",20]],default:"15–20 min",weight:.6,hint:"Target: ≤10 min (Valderrama et al., 2021; NY regulation)"},
+    m2:{label:"% physician language alignment with LEP service area",input:"percent",units:"%",default:50,weight:.4,hint:"Diamond et al. (2020): geographic supply-demand mismatch"},
+    weights:[.6,.4]
+  },
+  "Patient Experience":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"Measures HCAHPS equity gaps between LEP and non-LEP patients. Language-concordant care is directly associated with higher ratings on provider communication clarity and treatment comprehension (Torresdey et al., 2024; Ahmed et al., 2015).",
+    guidance:"Stratify HCAHPS reporting by preferred language. Share results with department leaders quarterly. Set incremental equity targets (e.g., close gap by 3 pp per quarter).",
+    m1:{label:"HCAHPS gap — providers explain clearly (LEP vs. non-LEP)",input:"gap_band",units:"pp",bands:[[2,100],[5,80],[10,60],[15,40],[1e9,20]],default:8,weight:.5,hint:"Target: ≤2 pp gap"},
+    m2:{label:"HCAHPS gap — treatment understanding (LEP vs. non-LEP)",input:"gap_band",units:"pp",bands:[[2,100],[5,80],[10,60],[15,40],[1e9,20]],default:10,weight:.5,hint:"Equity target: <5 pp gap"},
+    weights:[.5,.5]
+  },
+  "Outcomes":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"Prescription fill rates and preventive service utilization for LEP patients. LEP patients experience lower preventive service rates (Ramirez et al., 2022) and reduced prescription adherence without language-concordant care (Jacobs et al., 2004).",
+    guidance:"Implement language-stratified reporting in your EMR. Partner with pharmacy and care coordination teams to deploy language-specific outreach for overdue preventive services.",
+    m1:{label:"% LEP patients with prescriptions written AND filled",input:"percent",units:"%",default:70,weight:.5,hint:"Track via pharmacy data linked to preferred language"},
+    m2:{label:"% LEP patients receiving recommended preventive services",input:"percent",units:"%",default:60,weight:.5,hint:"Ramirez et al. (2022); Jacobs et al. (2004)"},
+    weights:[.5,.5]
+  },
+  "Compliance":{
+    evidence:"Normative-heavy", evClass:"chip-norm",
+    context:"Measures adherence to federal nondiscrimination obligations (Section 1557 of the ACA; 45 CFR §92.201). Documentation of interpreter/QBS use at required clinical touchpoints is both a legal safeguard and a patient safety imperative (NHeLP malpractice analysis).",
+    guidance:"Conduct a documentation audit across departments. Implement EMR-embedded interpreter documentation prompts. Train staff: undocumented interpreter use may be treated as interpreter non-use in malpractice proceedings.",
+    m1:{label:"% LEP patients with interpreter access at required touchpoints",input:"percent",units:"%",default:75,weight:.5,hint:"Section 1557 Final Rule (2024); 45 CFR §92.201"},
+    m2:{label:"% LEP encounters with documented interpreter/QBS use (excl. waivers)",input:"percent",units:"%",default:70,weight:.5,hint:"Target: ≥95%. Undocumented use = legal exposure."},
+    weights:[.5,.5]
+  },
+  "Patient Engagement":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"Teach-back is associated with a 23% lower hazard of repeat hospitalization (Hong et al., 2019). Structured 3-day post-discharge follow-up (auto + manual) reduces disparities in post-discharge complications (Malevanchik et al., 2021).",
+    guidance:"Embed teach-back verification in your discharge workflow as a required nursing step for all LEP patients. Establish an automated post-discharge call system with manual escalation for LEP patients not reached within 48 hours.",
+    m1:{label:"% LEP patients who received teach-back",input:"percent",units:"%",default:40,weight:.5,hint:"Hong et al. (2019): 23% lower readmission hazard"},
+    m2:{label:"% LEP post-discharge follow-up reached within 3 days",input:"percent",units:"%",default:55,weight:.5,hint:"Malevanchik et al. (2021): auto + manual protocol"},
+    weights:[.5,.5]
+  },
+  "Financial Stewardship":{
+    evidence:"Foundational-heavy", evClass:"chip-found",
+    context:"Professional interpretation timing is associated with shorter inpatient LOS (Lindholm et al., 2012) and reduced readmissions produce direct cost savings (Karliner et al., 2017). System-level best practices compound these returns.",
+    guidance:"Build a language access ROI model using your cost-per-bed-day and 30-day readmission cost data. Present executive leadership with a quantified financial case linking interpreter investment to LOS and readmission reductions.",
+    m1:{label:"Annual system cost savings from language access best practices",input:"dollars",units:"$",cap:5000000,default:750000,weight:.55,hint:"Model with your readmission + LOS data"},
+    m2:{label:"Annual hospital savings from reduced LOS among LEP patients",input:"dollars",units:"$",cap:1500000,default:250000,weight:.45,hint:"Lindholm et al. (2012)"},
+    weights:[.55,.45]
+  },
+  "Quality and Safety":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"LEP patients experience higher rates of adverse events and greater physical harm compared to English-proficient patients (Divi et al., 2007). Improved interpreter access is associated with reduced 30-day readmissions (Karliner et al., 2020). The Joint Commission identifies LEP status as a patient safety risk factor.",
+    guidance:"Include LEP status in your adverse event root-cause analysis template. Report LEP-stratified readmission rates to your Quality Committee quarterly.",
+    m1:{label:"30-day readmission rate for LEP patients",input:"band",units:"%",bands:[["Under 10% (ideal)",100],["10–15%",80],["15–20%",60],["20–25%",40],[">25%",20]],default:"15–20%",weight:.55,hint:"Karliner et al. (2020): interpreter access → reduced readmissions"},
+    m2:{label:"Gap in physical harm from adverse events (LEP vs. non-LEP)",input:"gap_band",units:"pp",bands:[[.5,100],[1.0,80],[2.0,60],[3.0,40],[1e9,20]],default:1.5,weight:.45,hint:"Divi et al. (2007): foundational patient safety benchmark"},
+    weights:[.55,.45]
+  },
+  "Workforce Development":{
+    evidence:"Interview-heavy", evClass:"chip-interv",
+    context:"Staff training in language access policy and preferred modality use reduces interpreter underutilization and overconfidence in informal bilingual communication (Diamond et al., 2009). QBS credentialing ensures qualified bilingual staff meet clinical communication standards (Amobi et al., 2024).",
+    guidance:"Create mandatory annual language access training (30–60 min) covering policy, modality selection, and documentation. Launch a QBS credentialing pathway with a defined competency exam and language proficiency verification.",
+    m1:{label:"% staff trained in language access policy & preferred modality",input:"percent",units:"%",default:65,weight:.5,hint:"Diamond et al. (2009): untrained staff underuse interpreters"},
+    m2:{label:"% providers who are QBS or enrolled in QBS training program",input:"percent",units:"%",default:20,weight:.5,hint:"Amobi et al. (2024, JAMA): QBS standards"},
+    weights:[.5,.5]
+  },
+  "Workflow Optimization":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"Language-discordant encounters significantly increase clinical encounter time (Khedr et al., 2020). The LAI operationalizes a 7-touchpoint workflow model. Teamwork safety training (e.g., TeamSTEPPS) supports system-level preparedness.",
+    guidance:"Map your clinical workflow against the 7-touchpoint model (triage, H&P, diagnostics, vitals, follow-up, discharge planning, patient education). Embed interpreter/QBS prompts at each touchpoint.",
+    m1:{label:"% LEP touchpoints with documented interpreter/QBS use (7-touchpoint)",input:"percent",units:"%",default:55,weight:.55,hint:"Khedr et al. (2020); Divi et al. (2007)"},
+    m2:{label:"Safety preparedness training (TeamSTEPPS or equivalent)",input:"likert",units:"1–5",default:3,weight:.45,hint:"1 = no formal training; 5 = fully implemented"},
+    weights:[.55,.45]
+  },
+  "Technology Innovation":{
+    evidence:"Strong empirical", evClass:"chip-strong",
+    context:"Technology-enabled interpreter access (VRI + audio tablets) and automated documentation expand reliable language service delivery (Barwise et al., 2024). EMR-embedded interpreter documentation, AI-assisted prioritization, and automated teach-back represent the leading edge of workflow integration.",
+    guidance:"Conduct a technology audit: which departments have VRI capability? Where is interpreter use still documented on paper? Prioritize high-acuity departments for VRI deployment and EMR integration.",
+    m1:{label:"% departments with tablets supporting VRI + audio interpreter modalities",input:"percent",units:"%",default:60,weight:.5,hint:"Barwise et al. (2024): AI-assisted interpreter prioritization"},
+    m2:{label:"% departments using tech-enabled documentation & automation",input:"percent",units:"%",default:45,weight:.5,hint:"Malevanchik et al. (2021); Barwise et al. (2024)"},
+    weights:[.5,.5]
+  }
+};
+
+const STAGES = [
+  {name:"Stage 0",min:0,  label:"Unstable",         desc:"Reactive, inconsistent; high variance by unit."},
+  {name:"Stage 1",min:40, label:"Foundational",     desc:"Core capabilities exist but performance is uneven."},
+  {name:"Stage 2",min:60, label:"Operational",      desc:"Reliable workflows across most touchpoints."},
+  {name:"Stage 3",min:75, label:"Optimized",        desc:"Proactive monitoring, strong documentation fidelity."},
+  {name:"Stage 4",min:85, label:"High-Reliability", desc:"Sustained, audited, continuously improved."}
+];
+
+const TIER2_PROMPTS = {
+  "Access":["Where are access delays most concentrated (triage, consults, discharge), and what operational evidence supports that conclusion?","Which LEP encounter types lack timestamped interpreter engagement, and how does that gap distort reported wait-time performance?","Where does short-term supply mismatch occur (languages, modalities, hours), and which 30-day control would most reduce delays?","What minimum documentation threshold would verify interpreter access compliance ≥60 without increasing clinician burden?"],
+  "Patient Experience":["Where do LEP experience scores diverge most sharply from expectations, and which communication step is most implicated?","Which encounters lack documented comprehension confirmation (teach-back, repeat-back, visual aids)?","Which service line shows the highest experience variance despite similar interpreter availability — and why?","What single workflow change would most improve clarity without adding interpreter minutes?"],
+  "Outcomes":["Where do LEP patients fall out of the care pathway (prescriptions, referrals, follow-up visits, preventive services)?","Which outcome gaps are most plausibly driven by communication breakdowns versus access constraints?","Which outcome measure would improve fastest if comprehension reliability increased by 10–15%?","What is the lowest-effort evidence signal needed to link language access interventions to outcomes performance?"],
+  "Compliance":["Where is compliance weakest: policy presence, workflow execution, or documentation traceability?","Which required language-access touchpoints are most frequently undocumented despite services being delivered?","Which department presents the highest regulatory exposure due to inconsistent evidence standards?","What minimum audit-ready evidence package would reliably pass a spot review today?"],
+  "Patient Engagement":["At which moments are LEP patients least engaged (care planning, consent, discharge, self-management)?","Where is engagement assumed rather than verified, and what documentation would close that gap?","Which modality (video, visual aids, teach-back) would most increase engagement without increasing visit length?","What engagement metric would best predict downstream outcomes if measured consistently?"],
+  "Financial Stewardship":["Where does language access failure most directly translate into cost (readmissions, LOS, denials, malpractice risk)?","Which service line shows high interpreter utilization but low value capture?","Where is over-reliance on vendor services masking workforce or workflow inefficiencies?","What near-term intervention would most improve ROI visibility without financial system integration?"],
+  "Quality and Safety":["Which adverse events or near misses are most plausibly linked to communication failure?","Where are safety events documented without explicit language context?","Which clinical pathway carries the highest compounded risk from language gaps?","What single safety control would most reduce risk variance within one quarter?"],
+  "Workforce Development":["Where is evidence weakest: missing timestamps, missing touchpoints, or missing attestations?","Which staff groups are most often relied upon without verified proficiency or role clarity?","Which documentation element would most reduce rework and downstream task burden in the next 30 days?","What minimum evidence standard is needed to reliably meet the next maturity gate (≥60)?"],
+  "Workflow Optimization":["Where does language access fail silently due to handoff breakdowns?","Which workflows rely on individual heroics instead of standardized triggers?","Which unit shows the greatest variability in execution — and why?","What single workflow hard-stop would most improve consistency without slowing throughput?"],
+  "Technology Innovation":["Where is technology underutilized relative to need?","Which language-access data elements are generated but not captured or structured?","Which tools introduce friction instead of reducing it?","What is the smallest technical enhancement that would materially improve visibility and reliability?"]
+};
+
+const ACTION_LIBRARY = {
+  "Access":{"median_delay_minutes":"Reduce interpreter delay: add an auto-trigger at registration/triage with an explicit SLA (≤10 min) and escalation if not met.","timestamp_integrity_pct":"Improve measurement integrity: make interpreter request/start timestamps required fields (EHR hard fields or smart form).","request_reliability_pct":"Fix request reliability: require interpreter_required prompts at intake; audit 'required but not requested' encounters weekly for 30 days."},
+  "Patient Experience":{"explained_yes_pct":"Standardize 'clear explanation' behaviors: teach-back script + visual aids at the highest-risk decision points; reinforce in rounding.","listened_yes_pct":"Strengthen listening signals: introduce a 2-question 'pause + confirm' micro-protocol at triage and discharge with interpreter present."},
+  "Outcomes":{"preventive_completed_pct":"Close follow-through gaps: add automated reminders and interpreter-supported follow-up scheduling before discharge.","non_readmission_pct":"Target readmissions: prioritize teach-back + language-concordant discharge instructions for top 2 diagnoses driving returns."},
+  "Compliance":{"section_1557_pct":"Make 1557 evidence audit-ready: standardize notice/acknowledgment capture at registration and store in a reportable field.","clinical_language_pct":"Fix language traceability: enforce preferred language as required in demographics AND propagate to clinical note headers.","timestamp_integrity_pct":"Ensure interpreter request/start timestamps are auto-captured (system time-stamps) to avoid manual reconciliation.","touchpoints_complete_pct":"Add a discharge hard-stop: require touchpoint documentation completion before final discharge sign-off."},
+  "Patient Engagement":{"teachback_doc_pct":"Scale teach-back: implement a 60–90 second teach-back script and a single-click documentation field in the discharge workflow.","discharge_concordance_pct":"Improve discharge concordance: auto-generate discharge instructions in preferred language or route for rapid translation."},
+  "Financial Stewardship":{"non_missed_reimb_pct":"Reduce leakage: implement a coding-ready checklist for CCM/TCM/critical-care documentation and monitor weekly denials/holds.","rework_penalty_pct":"Lower rework burden: reduce coder/provider queries via completeness prompts and templated attestations."},
+  "Quality and Safety":{"non_adverse_event_pct":"Add a high-risk communication control: interpreter + teach-back required for medication changes and consent-heavy decisions.","safety_event_reported_pct":"Improve detection: add a 'language context' field to safety reports and train staff to flag communication-related near misses."},
+  "Workforce Development":{"training_current_pct":"Raise competency: run a 30-day training sprint for high-volume units; require completion for scheduling in LEP-heavy areas.","qbs_pct":"Grow QBS capacity: identify top bilingual staff; enroll in QBS verification; redeploy to peak demand hours.","language_match_pct":"Deploy concordance intentionally: schedule language-concordant clinicians for the top 3 LEP languages in your service area."},
+  "Workflow Optimization":{"touchpoint_coverage_pct":"Standardize the 7-touchpoint workflow: embed interpreter/QBS prompts at each touchpoint in the EHR.","timestamp_integrity_pct":"Eliminate 'silent failures': ensure request/start timestamps are auto-captured to reveal where workflow breaks.","touchpoints_complete_pct":"Add a hard-stop requiring touchpoint documentation completion for high-risk pathways."},
+  "Technology Innovation":{"documentation_maturity_pct":"Improve documentation maturity: deploy smart phrases/templates for E/M basis, MDM elements, critical care, and teaching attestations.","rework_penalty_pct":"Reduce friction: implement real-time completeness checks (EHR prompts) to prevent downstream follow-up tasks.","tech_utilization_pct":"Increase tech utilization: standardize VRI availability; monitor adoption weekly."}
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let MODE = "manual"; // manual | upload
+let COMPUTE = "tier1_proxy"; // tier1_proxy | encounter_auto | pillar_agg
+let uploadedRaw = null;
+let tier3Baseline = null;
+let tier3Sim = null;
+let simEdits = {};
+let SIM_MODE = false;
+let tier3Filter = {service_line:"All", unit_id:"All", exemplar:"All"};
+let t2Responses = {}; // {pillar: [resp1, resp2, resp3, resp4]}
+let t2ActivePillar = PILLAR_ORDER[0];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCORING
+// ─────────────────────────────────────────────────────────────────────────────
+function scoreMetric(spec, raw){
+  if(MODE==="upload") return clamp(Number(raw)||0,0,100);
+  if(spec.input==="percent") return clamp(Number(raw)||0,0,100);
+  if(spec.input==="band"){ const m=new Map(spec.bands); return clamp(m.get(raw)??0,0,100); }
+  if(spec.input==="gap_band"){ const a=Math.abs(Number(raw)||0); for(const[u,s]of spec.bands){if(a<=u)return clamp(s,0,100);} return clamp(spec.bands[spec.bands.length-1][1],0,100); }
+  if(spec.input==="dollars"){ const v=Math.max(0,Number(raw)||0),c=Math.max(1,Number(spec.cap||1)); return clamp((Math.log1p(v)/Math.log1p(c))*100,0,100); }
+  if(spec.input==="likert"){ return clamp(((Number(raw)||1)-1)/4*100,0,100); }
+  return clamp(Number(raw)||0,0,100);
+}
+function getRaw(pillar,key,spec){
+  if(MODE==="upload"&&uploadedRaw&&uploadedRaw[pillar]&&uploadedRaw[pillar][key]!=null) return uploadedRaw[pillar][key];
+  const el=document.getElementById(`${slugify(pillar)}__${key}`);
+  if(!el) return spec.default;
+  if(spec.input==="band") return el.value;
+  return Number(el.value);
+}
+function compute(){
+  const ps={}, ms={};
+  for(const p of PILLAR_ORDER){
+    const m=METRICS[p];
+    const r1=getRaw(p,"m1",m.m1), r2=getRaw(p,"m2",m.m2);
+    const s1=scoreMetric(m.m1,r1), s2=scoreMetric(m.m2,r2);
+    const ps_=clamp(m.weights[0]*s1+m.weights[1]*s2,0,100);
+    ps[p]=ps_;
+    ms[p]={m1:{raw:r1,score:s1,spec:m.m1,weight:m.weights[0]}, m2:{raw:r2,score:s2,spec:m.m2,weight:m.weights[1]}};
+    const v1=document.getElementById(`${slugify(p)}__m1__val`);
+    const v2=document.getElementById(`${slugify(p)}__m2__val`);
+    if(v1) v1.textContent=`Score: ${s1.toFixed(0)}/100`;
+    if(v2) v2.textContent=`Score: ${s2.toFixed(0)}/100`;
+    const bd=document.getElementById(`pillar_badge_${slugify(p)}`);
+    if(bd){ bd.textContent=`${ps_.toFixed(0)}/100`; bd.className=`p-badge ${badgeClass(ps_)}`; }
+  }
+  const lai=Object.values(ps).reduce((a,b)=>a+b,0)/PILLAR_ORDER.length;
+  return{lai,pillarScores:ps,metricScores:ms};
+}
+function stageFrom(lai,ps){
+  let cand=STAGES[0];
+  for(const s of STAGES) if(lai>=s.min) cand=s;
+  const low=Object.entries(ps).filter(([p,sc])=>sc<cand.min);
+  if(!low.length) return{stage:cand,gatedBy:null,rationale:`All pillars meet ≥${cand.min}.`};
+  let gated=STAGES[0];
+  for(let i=STAGES.length-1;i>=0;i--){ const fails=Object.entries(ps).filter(([p,sc])=>sc<STAGES[i].min); if(!fails.length){gated=STAGES[i];break;} }
+  low.sort((a,b)=>a[1]-b[1]);
+  return{stage:gated,gatedBy:{pillar:low[0][0],score:low[0][1],needed:cand.min},rationale:`Gate: ${low[0][0]} is ${low[0][1].toFixed(0)}/100 (<${cand.min})`};
+}
+function readinessBand(lai){
+  if(lai>=80) return["High Readiness","Lower Risk","good","Your organization demonstrates strong structural preparedness for language-concordant care. Focus on sustaining performance and moving toward Tier 2 hypothesis generation."];
+  if(lai>=60) return["Moderate Readiness","Moderate Risk","warn","Your organization has foundational language access infrastructure in place, but meaningful gaps remain. Prioritize the three lowest-scoring domains for targeted improvement."];
+  return["Low Readiness","Higher Risk","bad","Your organization has significant structural gaps in language access preparedness. Immediate priority action across multiple domains is warranted."];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIER 1 UI BUILD
+// ─────────────────────────────────────────────────────────────────────────────
+function buildPillars(){
+  const wrap=document.getElementById("pillars_t1");
+  wrap.innerHTML="";
+  PILLAR_ORDER.forEach((pillar,idx)=>{
+    const m=METRICS[pillar];
+    const div=document.createElement("div");
+    div.className="pillar"+(idx===0?" open":"");
+    div.id=`pillar_wrap_${slugify(pillar)}`;
+
+    // header
+    const hd=document.createElement("div");
+    hd.className="pillar-hd";
+    hd.innerHTML=`<span class="p-num">${String(idx+1).padStart(2,"0")}</span>
+      <span class="p-name">${pillar}</span>
+      <span class="p-chip ${m.evClass}">${m.evidence}</span>
+      <span class="p-badge badge-neu" id="pillar_badge_${slugify(pillar)}">—</span>
+      <svg class="p-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>`;
+    hd.addEventListener("click",()=>div.classList.toggle("open"));
+
+    // body
+    const bd=document.createElement("div");
+    bd.className="pillar-bd";
+
+    const ctx=document.createElement("div");
+    ctx.className="p-ctx";
+    ctx.textContent=m.context;
+    bd.appendChild(ctx);
+
+    const grid=document.createElement("div");
+    grid.className="metrics-2";
+    grid.appendChild(makeMetricField(pillar,"m1",m.m1));
+    grid.appendChild(makeMetricField(pillar,"m2",m.m2));
+    bd.appendChild(grid);
+
+    const guide=document.createElement("div");
+    guide.className="p-guide";
+    guide.innerHTML=`<strong>Improvement Guidance</strong>${m.guidance}`;
+    bd.appendChild(guide);
+
+    div.appendChild(hd); div.appendChild(bd);
+    wrap.appendChild(div);
+  });
+}
+function makeMetricField(pillar,key,spec){
+  const id=`${slugify(pillar)}__${key}`;
+  const f=document.createElement("div");
+  f.className="mfield";
+  f.innerHTML=`<div class="mlabel">${spec.label}<span class="munit">(${spec.units})</span></div>`;
+
+  let inp;
+  if(spec.input==="percent"){
+    inp=document.createElement("input"); inp.type="range"; inp.min=0; inp.max=100; inp.step=1; inp.value=spec.default??50;
+  } else if(spec.input==="band"){
+    inp=document.createElement("select");
+    for(const[o]of spec.bands){const opt=document.createElement("option");opt.value=o;opt.textContent=o;inp.appendChild(opt);}
+    inp.value=spec.default??spec.bands[0][0];
+  } else if(spec.input==="gap_band"){
+    inp=document.createElement("input"); inp.type="number"; inp.min=0; inp.max=50; inp.step=.5; inp.value=spec.default??5;
+  } else if(spec.input==="dollars"){
+    inp=document.createElement("input"); inp.type="number"; inp.min=0; inp.max=spec.cap??1e6; inp.step=25000; inp.value=spec.default??0;
+  } else if(spec.input==="likert"){
+    inp=document.createElement("select");
+    const lbl={1:"1 — No formal training",2:"2 — Awareness only",3:"3 — Partial implementation",4:"4 — Largely implemented",5:"5 — Fully implemented"};
+    [1,2,3,4,5].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=lbl[v];inp.appendChild(o);}); inp.value=spec.default??3;
+  } else {
+    inp=document.createElement("input"); inp.type="range"; inp.min=0; inp.max=100; inp.step=1; inp.value=spec.default??50;
+  }
+  inp.id=id;
+  inp.addEventListener("input",updateAll);
+  inp.addEventListener("change",updateAll);
+  f.appendChild(inp);
+
+  const read=document.createElement("div"); read.className="mread"; read.id=id+"__val"; f.appendChild(read);
+  if(spec.hint){const h=document.createElement("div");h.className="mhint";h.textContent=spec.hint;f.appendChild(h);}
+  const wt=document.createElement("div");wt.className="mwt";wt.textContent=`Weight: ${(spec.weight*100).toFixed(0)}%`;f.appendChild(wt);
+  return f;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATE ALL (Tier 1 + propagate to Tier 2)
+// ─────────────────────────────────────────────────────────────────────────────
+function updateAll(){
+  const{lai,pillarScores}=compute();
+  const[tb,tr,cls,interp]=readinessBand(lai);
+  const st=stageFrom(lai,pillarScores);
+
+  // Odometer gauge — animate needle to new score
+  animateOdometer(lai);
+  // Score text color tracks band
+  const scoreEl=document.getElementById("t1_lai");
+  if(scoreEl) scoreEl.style.color=cls==="good"?"#0cc5ad":cls==="warn"?"#f5c020":"#e06060";
+  setText("t1_tier",tb);
+  const rn=document.getElementById("t1_risk_n"); if(rn){rn.textContent=tr;rn.style.color=cls==="good"?"var(--teal2)":cls==="warn"?"#f0b84a":"#e07070";}
+  const b60=Object.values(pillarScores).filter(s=>s<60).length;
+  setText("t1_below60",b60);
+  const bb=document.getElementById("t1_band_block");
+  if(bb){bb.className=`odo-band ${cls}`;bb.innerHTML=`<strong>${tb} — ${tr}</strong>${interp}`;}
+
+  // Top 3 opps
+  const sorted=Object.entries(pillarScores).sort((a,b)=>a[1]-b[1]).slice(0,3);
+  const ol=document.getElementById("t1_opps");
+  if(ol) ol.innerHTML=sorted.map(([p,s],i)=>`
+    <div class="opp-item">
+      <div class="opp-rank">#${i+1}</div>
+      <div class="opp-name">${p}</div>
+      <div class="opp-score ${s<60?"bad":"warn"}">${s.toFixed(0)}</div>
+    </div>`).join("");
+
+  // Stage ladder
+  const stagesDiv=document.getElementById("t1_stages");
+  if(stagesDiv){
+    stagesDiv.innerHTML=STAGES.map(s=>{
+      const isCur=s.name===st.stage.name;
+      const isMet=lai>=s.min;
+      return`<div class="stage-row${isCur?" current":isMet?" met":""}">
+        <div class="stage-num">${s.name}</div>
+        <div class="stage-name">${s.label} <span style="font-size:11px;font-weight:400;color:var(--silver);">≥${s.min}</span></div>
+        <div class="stage-dot"></div>
+      </div>`;
+    }).join("");
+  }
+  setText("t1_stage_cur",`${st.stage.name}: ${st.stage.label}`);
+
+  // Charts — render both sidebar (light bg) and banner (dark bg)
+  renderBarChart("chart_bar_t1",pillarScores,220,false);
+  renderBarChart("chart_bar_t1_banner",pillarScores,240,true);
+
+  // Update Tier 2 pillar nav if active
+  updateT2PillarNav(pillarScores);
+  if(document.getElementById("view_t2").classList.contains("active")) renderT2();
+  if(document.getElementById("view_t3").classList.contains("active")) renderT3Dashboard();
+}
+
+function renderBarChart(divId,scores,height=280,dark=false){
+  const el=document.getElementById(divId); if(!el)return;
+  const x=PILLAR_ORDER.map(p=>p.length>14?p.slice(0,12)+"…":p);
+  const y=PILLAR_ORDER.map(p=>scores[p]);
+  const colorMap={"g":"rgba(24,167,111,.75)","a":"rgba(212,142,26,.75)","r":"rgba(201,64,64,.75)"};
+  const fills=y.map(v=>colorMap[v>=80?"g":v<60?"r":"a"]);
+  const tickColor=dark?"rgba(255,255,255,.38)":"#4a637d";
+  const valColor=dark?"rgba(255,255,255,.55)":"#4a637d";
+  Plotly.newPlot(divId,[{type:"bar",x,y,marker:{color:fills},text:y.map(v=>`${v.toFixed(0)}`),textposition:"outside",textfont:{family:"DM Sans,sans-serif",size:11,color:valColor},cliponaxis:false}],
+    {height,margin:{l:28,r:10,t:10,b:dark?72:80},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",xaxis:{tickangle:35,tickfont:{family:"DM Sans,sans-serif",size:dark?9.5:10.5,color:tickColor}},yaxis:{range:[0,115],tickfont:{size:10,color:tickColor},gridcolor:dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.07)"}},{displayModeBar:false,responsive:true});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIER 2 LOGIC
+// ─────────────────────────────────────────────────────────────────────────────
+function buildT2(){
+  // Build pillar nav
+  const nav=document.getElementById("pillar_nav_t2");
+  if(!nav) return;
+  nav.innerHTML="";
+  PILLAR_ORDER.forEach((p,i)=>{
+    const btn=document.createElement("button");
+    btn.className="pnav-btn"+(p===t2ActivePillar?" active":"");
+    btn.id=`pnav_${slugify(p)}`;
+    btn.innerHTML=`<span class="pnav-num">${String(i+1).padStart(2,"0")}</span><span class="pnav-name">${p}</span><span class="pnav-score" id="pnav_score_${slugify(p)}">—</span>`;
+    btn.addEventListener("click",()=>{ t2ActivePillar=p; renderT2(); });
+    nav.appendChild(btn);
+  });
+}
+function updateT2PillarNav(pillarScores){
+  for(const p of PILLAR_ORDER){
+    const sc=pillarScores[p];
+    const el=document.getElementById(`pnav_score_${slugify(p)}`);
+    if(el){ el.textContent=`${sc.toFixed(0)}`; el.style.color=scoreColor(sc).replace("var(","").replace(")",""); const colorMap={"--green":"rgba(24,167,111,1)","--amber":"rgba(212,142,26,1)","--red":"rgba(201,64,64,1)"}; el.style.color=sc>=80?"#18a76f":sc<60?"#c94040":"#d48e1a"; }
+    const btn=document.getElementById(`pnav_${slugify(p)}`);
+    if(btn){ btn.classList.toggle("active",p===t2ActivePillar); }
+  }
+}
+function renderT2(){
+  const{pillarScores,metricScores}=compute();
+  const p=t2ActivePillar;
+  const sc=pillarScores[p];
+  const ms=metricScores[p];
+  const m=METRICS[p];
+
+  // Update active in nav
+  document.querySelectorAll(".pnav-btn").forEach(b=>b.classList.remove("active"));
+  const ab=document.getElementById(`pnav_${slugify(p)}`); if(ab)ab.classList.add("active");
+
+  // Score boxes
+  const[,,,]=readinessBand(sc);
+  const[rb]=readinessBand(sc);
+  setText("t2_pillar_score",`${sc.toFixed(0)}/100`);
+  const tsd=document.getElementById("t2_pillar_score"); if(tsd)tsd.style.color=sc>=80?"#18a76f":sc<60?"#c94040":"#d48e1a";
+  setText("t2_pillar_band",rb);
+  const next=STAGES.find(s=>sc<s.min&&s.min>0)||STAGES[STAGES.length-1];
+  const gap=Math.max(0,next.min-sc);
+  setText("t2_gate",`+${gap.toFixed(0)} pts`);
+  setText("t2_evidence",m.evidence);
+  setText("t2_pillar_title",p);
+
+  // KPI breakdown chart
+  Plotly.newPlot("chart_t2_breakdown",[{type:"bar",x:["KPI 1","KPI 2"],y:[ms.m1.score,ms.m2.score],marker:{color:[sc>=80?"rgba(24,167,111,.7)":sc<60?"rgba(201,64,64,.7)":"rgba(212,142,26,.7)","rgba(14,158,140,.5)"]},text:[`${ms.m1.score.toFixed(0)}`,`${ms.m2.score.toFixed(0)}`],textposition:"outside",textfont:{size:13,family:"DM Sans,sans-serif"}}],
+    {height:200,margin:{l:30,r:20,t:16,b:40},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",yaxis:{range:[0,115]},annotations:[{x:0,y:ms.m1.score+6,text:ms.m1.spec.label.slice(0,30)+"…",showarrow:false,font:{size:10,color:"#4a637d"}},{x:1,y:ms.m2.score+6,text:ms.m2.spec.label.slice(0,30)+"…",showarrow:false,font:{size:10,color:"#4a637d"}}]},{displayModeBar:false,responsive:true});
+
+  // Hypothesis prompts
+  const prompts=TIER2_PROMPTS[p]||[];
+  const intro=document.getElementById("t2_hyp_intro");
+  if(intro) intro.textContent=`${p} — ${m.context.slice(0,140)}…`;
+  const container=document.getElementById("t2_prompts");
+  if(!container) return;
+  if(!t2Responses[p]) t2Responses[p]=prompts.map(()=>"");
+  container.innerHTML="";
+  prompts.forEach((q,i)=>{
+    const item=document.createElement("div");
+    item.className="hyp-prompt-item";
+    item.innerHTML=`<div class="hyp-q"><div class="hyp-q-num">${i+1}</div><div class="hyp-q-text">${q}</div></div>
+      <div class="hyp-input-wrap">
+        <label>Your hypothesis / response</label>
+        <textarea id="hyp_${slugify(p)}_${i}" placeholder="Write your hypothesis here — what do you expect the data to show?">${t2Responses[p][i]||""}</textarea>
+      </div>`;
+    const ta=item.querySelector("textarea");
+    ta.addEventListener("input",()=>{
+      t2Responses[p][i]=ta.value;
+      const note=document.getElementById("t2_saved_note");
+      if(note){ note.classList.add("show"); clearTimeout(note._t); note._t=setTimeout(()=>note.classList.remove("show"),2000); }
+    });
+    container.appendChild(item);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIER 3 — ENCOUNTER COMPUTATION (full logic preserved from prototype)
+// ─────────────────────────────────────────────────────────────────────────────
+function weightsFor(rows,pillar){
+  const adv=document.getElementById("chk_advanced_mode")?.checked;
+  if(!adv) return rows.map(_=>1);
+  const heavy=new Set(["Compliance","Quality and Safety","Workflow Optimization","Access"]);
+  const base=rows.map(r=>getAdvancedFlag(r)?2:1);
+  return heavy.has(pillar)?base:rows.map(_=>1);
+}
+function getAdvancedFlag(row){ const a=yn(getField(row,"advanced_case_flag")); if(a!==null)return a===1; return String(getField(row,"exemplar_type")??"").trim().toLowerCase()==="advanced_maternal"; }
+function computeReworkPenalty(rows,w){ const vals=rows.map(r=>{ const t=num(getField(r,"attendant_tasks_count")); return t===null?null:Math.min(t/10,1); }); const m=weightedMean(vals,w); return m===null?1:clamp(1-.25*m,.75,1); }
+function computeIntegrity(rows,w){ const ind=[],ww=[]; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(yn(getField(r,"interpreter_requested"))!==1)continue; const ok=(yn(getField(r,"interp_request_documented"))===1&&yn(getField(r,"interp_start_documented"))===1)?1:0; ind.push(ok);ww.push(w[i]); } const rt=weightedRate(ind,ww); return rt===null?0:rt/100; }
+function computeTouchpointRatio(row){ const fields=["interp_or_qbs_preassessment_triage","interp_or_qbs_hp","interp_or_qbs_diagnosticrev","interp_or_qbs_vitals","interp_or_qbs_followup","interp_or_qbs_dischargeplan","interp_or_qbs_pteduc"]; let y=0,d=0; for(const f of fields){ const v=yn(getField(row,f)); if(v===null)continue; d++;if(v===1)y++; } return d===0?null:y/d; }
+function delayScoreFromMedian(m){ if(m===null)return 0; if(m<=10)return 100; if(m<=15)return 80; if(m<=20)return 60; if(m<=25)return 40; return 20; }
+function documentationMaturityComposite(rows,w){
+  const comps=[];
+  const ind1=rows.map(r=>yn(getField(r,"doc_em_mdm_time_complete"))); comps.push({rate:weightedRate(ind1.map(v=>v===null?null:v),w),wt:2});
+  const mdm=rows.map(r=>{ const a=yn(getField(r,"mdm_data_review_documents_present")),b=yn(getField(r,"mdm_independent_interpretation_documented")),c=yn(getField(r,"mdm_discussion_external_provider_documented")); const arr=[a,b,c].filter(x=>x!==null); return arr.length?arr.reduce((s,x)=>s+x,0)/arr.length:null; }); const mr=weightedMean(mdm,w); comps.push({rate:mr===null?null:100*mr,wt:3});
+  const cc=[],cw=[]; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(yn(getField(r,"has_99291"))!==1)continue; const ok=(yn(getField(r,"critical_care_met_definition_documented"))===1&&yn(getField(r,"critical_care_activities_documented"))===1&&num(getField(r,"critical_care_time_minutes_documented"))!==null)?1:0; cc.push(ok);cw.push(w[i]); } comps.push({rate:weightedRate(cc,cw),wt:3});
+  const tc=[],tw=[]; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(!(yn(getField(r,"has_gc"))===1||yn(getField(r,"has_ge"))===1))continue; tc.push(yn(getField(r,"doc_teaching_attestation_complete"))===1?1:0);tw.push(w[i]); } comps.push({rate:weightedRate(tc,tw),wt:2});
+  const cm=[],cmw=[]; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(yn(getField(r,"has_ccm"))!==1)continue; const ok=(yn(getField(r,"ccm_patient_consent_documented"))===1&&yn(getField(r,"ccm_care_plan_documented"))===1&&num(getField(r,"ccm_time_minutes_documented"))!==null)?1:0; cm.push(ok);cmw.push(w[i]); } comps.push({rate:weightedRate(cm,cmw),wt:3});
+  const tm=[],tmw=[]; for(let i=0;i<rows.length;i++){ const r=rows[i]; if(yn(getField(r,"has_tcm"))!==1)continue; const ok=(yn(getField(r,"tcm_discharge_date_documented"))===1&&yn(getField(r,"tcm_interactive_contact_made"))===1&&yn(getField(r,"tcm_face_to_face_visit_completed"))===1)?1:0; tm.push(ok);tmw.push(w[i]); } comps.push({rate:weightedRate(tm,tmw),wt:3});
+  let sw=0,sx=0; for(const c of comps){ if(c.rate===null)continue; sw+=c.wt;sx+=c.wt*c.rate; } return sw>0?sx/sw:0;
+}
+function computeFromEncounterRows(rows){
+  const result={};
+  const rp=rows[0]?.["reporting_quarter"]||rows[0]?.["reporting_period"]||"";
+  const n=rows.length;
+  // Access
+  {const w=weightsFor(rows,"Access"); const del=[],dw=[]; for(let i=0;i<rows.length;i++){const r=rows[i];if(yn(getField(r,"interpreter_requested"))!==1)continue;const d=num(getField(r,"interpreter_delay_minutes"));if(d===null)continue;del.push(d);dw.push(w[i]);}const med=weightedMedian(del,dw);const kpi1=clamp(delayScoreFromMedian(med)*computeIntegrity(rows,w),0,100);const ind=[],iw=[];for(let i=0;i<rows.length;i++){const r=rows[i];if(yn(getField(r,"interpreter_required"))!==1)continue;ind.push(yn(getField(r,"interpreter_requested"))===1?1:0);iw.push(w[i]);}const kpi2=weightedRate(ind,iw)??0;result["Access"]={m1:kpi1,m2:kpi2};}
+  // Patient Experience
+  {const w=weightsFor(rows,"Patient Experience");result["Patient Experience"]={m1:weightedRate(rows.map(r=>yn(getField(r,"provider_explained_understandably"))),w)??0,m2:weightedRate(rows.map(r=>yn(getField(r,"provider_listened"))),w)??0};}
+  // Outcomes
+  {const w=weightsFor(rows,"Outcomes");const readm=weightedRate(rows.map(r=>yn(getField(r,"readmission_30d"))),w)??0;result["Outcomes"]={m1:weightedRate(rows.map(r=>yn(getField(r,"preventive_service_completed"))),w)??0,m2:clamp(100-readm,0,100)};}
+  // Compliance
+  {const w=weightsFor(rows,"Compliance");const comp=rows.map(r=>{const a=yn(getField(r,"section_1557_documented")),b=ynOrPresent(getField(r,"clinical_language_documented")),c=(yn(getField(r,"interp_request_documented"))===1&&yn(getField(r,"interp_start_documented"))===1)?1:0;const arr=[a,b,c].filter(x=>x!==null);return arr.length?arr.reduce((s,x)=>s+x,0)/arr.length:null;});result["Compliance"]={m1:clamp((weightedMean(comp,w)??0)*100,0,100),m2:weightedRate(rows.map(r=>yn(getField(r,"doc_interpreter_touchpoints_complete"))),w)??0};}
+  // Patient Engagement
+  {const w=weightsFor(rows,"Patient Engagement");const conc=rows.map(r=>{const a=String(getField(r,"discharge_instructions_language")??"").trim().toLowerCase(),b=String(getField(r,"preferred_language")??"").trim().toLowerCase();if(!a||!b)return null;return a===b?1:0;});result["Patient Engagement"]={m1:weightedRate(rows.map(r=>yn(getField(r,"teach_back_documented"))),w)??0,m2:weightedRate(conc,w)??0};}
+  // Financial Stewardship
+  {const w=weightsFor(rows,"Financial Stewardship");const av=weightedRate(rows.map(r=>yn(getField(r,"avoidable_los_flag"))),w)??0,ms=weightedRate(rows.map(r=>yn(getField(r,"missed_reimbursement_opportunity"))),w)??0;result["Financial Stewardship"]={m1:clamp(100-av,0,100),m2:clamp(clamp(100-ms,0,100)*computeReworkPenalty(rows,w),0,100)};}
+  // Quality and Safety
+  {const w=weightsFor(rows,"Quality and Safety");const adv=weightedRate(rows.map(r=>yn(getField(r,"adverse_event_flag"))),w)??0;result["Quality and Safety"]={m1:clamp(100-adv,0,100),m2:weightedRate(rows.map(r=>yn(getField(r,"safety_event_reported"))),w)??0};}
+  // Workforce Development
+  {const w=weightsFor(rows,"Workforce Development");const qbs=weightedRate(rows.map(r=>yn(getField(r,"provider_qbs_qualified"))),w)??0,match=weightedRate(rows.map(r=>yn(getField(r,"provider_language_matches_patient"))),w)??0;result["Workforce Development"]={m1:weightedRate(rows.map(r=>yn(getField(r,"staff_language_access_training_current"))),w)??0,m2:clamp((qbs+match)/2,0,100)};}
+  // Workflow Optimization
+  {const w=weightsFor(rows,"Workflow Optimization");const rat=rows.map(r=>computeTouchpointRatio(r));const mr=weightedMean(rat,w)??0;result["Workflow Optimization"]={m1:clamp(100*mr*computeIntegrity(rows,w),0,100),m2:weightedRate(rows.map(r=>yn(getField(r,"doc_interpreter_touchpoints_complete"))),w)??0};}
+  // Technology Innovation
+  {const w=weightsFor(rows,"Technology Innovation");const util=rows.map(r=>{const a=yn(getField(r,"has_t1013")),mod=String(getField(r,"interpreter_modality")??"").trim().toLowerCase(),vri=mod==="vri"?1:0;const arr=[a,vri].filter(x=>x!==null);return arr.length?arr.reduce((s,x)=>s+x,0)/arr.length:null;});const ur=(weightedMean(util,w)??0)*100;const ti=rows.map(r=>mapTechLevel(getField(r,"tech_integration_level")));const tis=weightedMean(ti,w)??0;result["Technology Innovation"]={m1:clamp((ur+tis)/2,0,100),m2:clamp(documentationMaturityComposite(rows,w)*computeReworkPenalty(rows,w),0,100)};}
+  // Build pillarDetails for drilldown/simulation
+  const pd={};
+  function setDetail(p,k1,k2,c1,c2){pd[p]={kpi1:k1,kpi2:k2,components:{kpi1:c1||[],kpi2:c2||[]}};}
+  // Access details
+  try{const wA=weightsFor(rows,"Access");const del=[],dw=[];for(let i=0;i<rows.length;i++){const r=rows[i];if(yn(getField(r,"interpreter_requested"))!==1)continue;const d=num(getField(r,"interpreter_delay_minutes"));if(d===null)continue;del.push(d);dw.push(wA[i]);}const med=weightedMedian(del,dw);const intPct=computeIntegrity(rows,wA)*100;const reqRel=weightedRate(rows.map(r=>(yn(getField(r,"interpreter_required"))===1?(yn(getField(r,"interpreter_requested"))===1?1:0):null)),wA)??0;setDetail("Access",result["Access"].m1,result["Access"].m2,[{key:"median_delay_minutes",label:"Median interpreter delay",value:med,unit:"min",type:"minutes"},{key:"delay_score_band",label:"Delay score (banded)",value:delayScoreFromMedian(med),unit:"/100",type:"score"},{key:"timestamp_integrity_pct",label:"Timestamp integrity",value:intPct,unit:"%",type:"percent"}],[{key:"request_reliability_pct",label:"Interpreter requested when required",value:reqRel,unit:"%",type:"percent"}]);}catch(e){}
+  setDetail("Patient Experience",result["Patient Experience"].m1,result["Patient Experience"].m2,[{key:"explained_yes_pct",label:"Explained understandably (Yes)",value:result["Patient Experience"].m1,unit:"%",type:"percent"}],[{key:"listened_yes_pct",label:"Listened (Yes)",value:result["Patient Experience"].m2,unit:"%",type:"percent"}]);
+  setDetail("Outcomes",result["Outcomes"].m1,result["Outcomes"].m2,[{key:"preventive_completed_pct",label:"Preventive service completed",value:result["Outcomes"].m1,unit:"%",type:"percent"}],[{key:"non_readmission_pct",label:"Not readmitted within 30 days",value:result["Outcomes"].m2,unit:"%",type:"percent"}]);
+  {const wC=weightsFor(rows,"Compliance");setDetail("Compliance",result["Compliance"].m1,result["Compliance"].m2,[{key:"section_1557_pct",label:"Section 1557 documented",value:weightedRate(rows.map(r=>yn(getField(r,"section_1557_documented"))),wC)??0,unit:"%",type:"percent"},{key:"clinical_language_pct",label:"Clinical language documented",value:weightedRate(rows.map(r=>ynOrPresent(getField(r,"clinical_language_documented"))),wC)??0,unit:"%",type:"percent"},{key:"timestamp_integrity_pct",label:"Timestamp integrity",value:computeIntegrity(rows,wC)*100,unit:"%",type:"percent"}],[{key:"touchpoints_complete_pct",label:"Interpreter touchpoints complete",value:result["Compliance"].m2,unit:"%",type:"percent"}]);}
+  setDetail("Patient Engagement",result["Patient Engagement"].m1,result["Patient Engagement"].m2,[{key:"teachback_doc_pct",label:"Teach-back documented",value:result["Patient Engagement"].m1,unit:"%",type:"percent"}],[{key:"discharge_concordance_pct",label:"Discharge language concordant",value:result["Patient Engagement"].m2,unit:"%",type:"percent"}]);
+  {const wF=weightsFor(rows,"Financial Stewardship");const nm=100-(weightedRate(rows.map(r=>yn(getField(r,"missed_reimbursement_opportunity"))),wF)??0);const rp=computeReworkPenalty(rows,wF)*100;setDetail("Financial Stewardship",result["Financial Stewardship"].m1,result["Financial Stewardship"].m2,[{key:"non_avoidable_los_pct",label:"Avoidable LOS avoided",value:result["Financial Stewardship"].m1,unit:"%",type:"percent"}],[{key:"non_missed_reimb_pct",label:"No missed reimbursement",value:nm,unit:"%",type:"percent"},{key:"rework_penalty_pct",label:"Rework penalty factor",value:rp,unit:"%",type:"percent"}]);}
+  setDetail("Quality and Safety",result["Quality and Safety"].m1,result["Quality and Safety"].m2,[{key:"non_adverse_event_pct",label:"No adverse event flag",value:result["Quality and Safety"].m1,unit:"%",type:"percent"}],[{key:"safety_event_reported_pct",label:"Safety event reported",value:result["Quality and Safety"].m2,unit:"%",type:"percent"}]);
+  {const wW=weightsFor(rows,"Workforce Development");setDetail("Workforce Development",result["Workforce Development"].m1,result["Workforce Development"].m2,[{key:"training_current_pct",label:"Staff training current",value:result["Workforce Development"].m1,unit:"%",type:"percent"}],[{key:"qbs_pct",label:"Provider QBS qualified",value:weightedRate(rows.map(r=>yn(getField(r,"provider_qbs_qualified"))),wW)??0,unit:"%",type:"percent"},{key:"language_match_pct",label:"Provider language matches patient",value:weightedRate(rows.map(r=>yn(getField(r,"provider_language_matches_patient"))),wW)??0,unit:"%",type:"percent"}]);}
+  {const wO=weightsFor(rows,"Workflow Optimization");setDetail("Workflow Optimization",result["Workflow Optimization"].m1,result["Workflow Optimization"].m2,[{key:"touchpoint_coverage_pct",label:"Mean touchpoint coverage",value:result["Workflow Optimization"].m1,unit:"%",type:"percent"},{key:"timestamp_integrity_pct",label:"Timestamp integrity",value:computeIntegrity(rows,wO)*100,unit:"%",type:"percent"}],[{key:"touchpoints_complete_pct",label:"Touchpoints complete (doc flag)",value:result["Workflow Optimization"].m2,unit:"%",type:"percent"}]);}
+  setDetail("Technology Innovation",result["Technology Innovation"].m1,result["Technology Innovation"].m2,[{key:"tech_utilization_pct",label:"Tech utilization proxy (T1013/VRI)",value:result["Technology Innovation"].m1,unit:"%",type:"percent"}],[{key:"documentation_maturity_pct",label:"Documentation maturity composite",value:documentationMaturityComposite(rows,weightsFor(rows,"Technology Innovation")),unit:"%",type:"percent"},{key:"rework_penalty_pct",label:"Rework penalty factor",value:computeReworkPenalty(rows,weightsFor(rows,"Technology Innovation"))*100,unit:"%",type:"percent"}]);
+  return{pillarMetrics:result,pillarDetails:pd,meta:{n,reporting_period:rp}};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIER 3 UI
+// ─────────────────────────────────────────────────────────────────────────────
+function setT3Mode(loaded){
+  document.getElementById("t3_empty").style.display=loaded?"none":"block";
+  document.getElementById("t3_content").style.display=loaded?"block":"none";
+  const dot=document.getElementById("us_dot");
+  if(dot) dot.classList.toggle("loaded",loaded);
+  const sb=document.getElementById("upload_status_bar");
+  if(sb) sb.classList.toggle("loaded",loaded);
+  document.getElementById("hdr_mode").textContent=loaded?"Mode: Tier 3 — Encounter Evidence":"Mode: Manual (Tier 1 proxy)";
+  document.getElementById("hdr_mode").classList.toggle("t3",loaded);
+}
+function renderT3Dashboard(){
+  if(!tier3Baseline&&!uploadedRaw) return;
+  const active=SIM_MODE&&tier3Sim?tier3Sim:tier3Baseline;
+  if(!active) return;
+  const pm=active.pillarMetrics;
+  // Compute pillar scores
+  const ps={};
+  for(const p of PILLAR_ORDER){ ps[p]=clamp((METRICS[p].weights[0]*pm[p].m1)+(METRICS[p].weights[1]*pm[p].m2),0,100); }
+  const lai=Object.values(ps).reduce((a,b)=>a+b,0)/PILLAR_ORDER.length;
+  renderBarChart("chart_t3_bar",ps,220);
+  // Pillar table
+  const note=document.getElementById("t3_pillar_table_note");
+  if(note) note.textContent=SIM_MODE?"Showing SIMULATED scores (Simulation Mode ON).":"Showing COMPUTED scores from uploaded dataset.";
+  const tbl=document.getElementById("t3_pillar_table");
+  if(tbl){
+    const base=tier3Baseline?tier3Baseline.pillarMetrics:null;
+    let html=`<tr><th>Pillar</th><th>KPI 1</th><th>KPI 2</th><th>Pillar Score</th><th>Δ vs Baseline</th></tr>`;
+    for(const p of PILLAR_ORDER){
+      const k1=pm[p].m1,k2=pm[p].m2,sc=ps[p];
+      const baseScore=base?clamp((METRICS[p].weights[0]*base[p].m1)+(METRICS[p].weights[1]*base[p].m2),0,100):null;
+      const d=baseScore!==null?sc-baseScore:null;
+      const dcls=d===null?"":(d>=0?"pos":"neg");
+      html+=`<tr><td>${p}</td><td>${k1.toFixed(0)}</td><td>${k2.toFixed(0)}</td><td style="font-weight:700;color:${scoreColor(sc).replace("var(","").replace(")","")}">${sc.toFixed(0)}</td><td class="delta ${dcls}">${d===null?"—":(d>=0?"+":"")+d.toFixed(0)}</td></tr>`;
+    }
+    tbl.innerHTML=html;
+  }
+  renderT3Drilldown();
+}
+function renderT3Drilldown(){
+  const sel=document.getElementById("t3_pillar_select");
+  if(!sel||!sel.options.length) return;
+  const pillar=sel.value||PILLAR_ORDER[0];
+  const active=SIM_MODE&&tier3Sim?tier3Sim:tier3Baseline;
+  const ctx=document.getElementById("t3_pillar_ctx");
+  if(!active||!active.pillarDetails||!active.pillarDetails[pillar]){
+    if(ctx) ctx.textContent="Upload an encounter-level dataset to see component drilldown.";
+    setHTML("t3_component_table","<tr><th>Component</th><th>Value</th></tr><tr><td colspan='2'>—</td></tr>");
+    document.getElementById("t3_actions_list").innerHTML="<li>Upload encounter-level data to generate recommendations.</li>";
+    document.getElementById("t3_sim_controls").innerHTML="";
+    return;
+  }
+  const det=active.pillarDetails[pillar];
+  const pm=active.pillarMetrics[pillar];
+  const sc=clamp((METRICS[pillar].weights[0]*pm.m1)+(METRICS[pillar].weights[1]*pm.m2),0,100);
+  if(ctx) ctx.textContent=`KPI1=${det.kpi1.toFixed(0)}/100 · KPI2=${det.kpi2.toFixed(0)}/100 · Pillar score=${sc.toFixed(0)}/100. Components show how Tier 3 derived scores from your dataset.`;
+  // Component table
+  let chtml=`<tr><th>KPI</th><th>Component</th><th>Value</th><th>Unit</th></tr>`;
+  for(const c of det.components.kpi1) chtml+=`<tr><td><strong>KPI1</strong></td><td>${c.label}</td><td>${c.value===null||c.value===undefined?"—":(Math.round((c.value)*10)/10)}</td><td>${c.unit||""}</td></tr>`;
+  for(const c of det.components.kpi2) chtml+=`<tr><td><strong>KPI2</strong></td><td>${c.label}</td><td>${c.value===null||c.value===undefined?"—":(Math.round((c.value)*10)/10)}</td><td>${c.unit||""}</td></tr>`;
+  setHTML("t3_component_table",chtml);
+  // Recommendations
+  const comps=[...det.components.kpi1,...det.components.kpi2];
+  const scored=comps.map(c=>{ if(c.key==="median_delay_minutes")return{key:c.key,value:delayScoreFromMedian(c.value)}; return{key:c.key,value:typeof c.value==="number"?c.value:null}; }).filter(x=>x.value!==null);
+  scored.sort((a,b)=>a.value-b.value);
+  const lib=ACTION_LIBRARY[pillar]||{};
+  const acts=[];
+  for(const c of scored.slice(0,3)){ if(lib[c.key])acts.push(lib[c.key]); }
+  while(acts.length<3) acts.push(`Run a 30-day improvement test targeting the lowest component (${scored[0]?.key||"this pillar"}) and re-measure.`);
+  setHTML("t3_actions_list",acts.slice(0,3).map(a=>`<li>${a}</li>`).join(""));
+  buildSimControls(pillar,det);
+}
+function buildSimControls(pillar,det){
+  const wrap=document.getElementById("t3_sim_controls"); if(!wrap)return; wrap.innerHTML="";
+  function addSlider(key,label,baseVal,min,max,step){
+    const cur=(simEdits[pillar]&&simEdits[pillar][key]!==undefined)?simEdits[pillar][key]:baseVal;
+    const f=document.createElement("div"); f.className="sim-field";
+    f.innerHTML=`<div class="slabel">${label} <span id="sval_${slugify(pillar)}_${key}">${Math.round(cur??0)}</span></div>
+      <input type="range" min="${min}" max="${max}" step="${step}" value="${cur??min}" id="sinp_${slugify(pillar)}_${key}"/>
+      <div style="font-size:11px;color:var(--silver);margin-top:3px;">Baseline: ${baseVal===null||baseVal===undefined?"—":Math.round(baseVal)}</div>`;
+    const inp=f.querySelector("input");
+    inp.addEventListener("input",e=>{ const v=Number(e.target.value); simEdits[pillar]=simEdits[pillar]||{}; simEdits[pillar][key]=v; const lbl=document.getElementById(`sval_${slugify(pillar)}_${key}`); if(lbl)lbl.textContent=Math.round(v); if(SIM_MODE)applySimulation(); });
+    wrap.appendChild(f);
+  }
+  if(pillar==="Access"){const c1=det.components.kpi1;addSlider("median_delay_minutes","Median delay (min) — reduce",c1.find(c=>c.key==="median_delay_minutes")?.value,0,40,1);addSlider("timestamp_integrity_pct","Timestamp integrity (%)",c1.find(c=>c.key==="timestamp_integrity_pct")?.value,0,100,1);addSlider("request_reliability_pct","Interpreter requested when required (%)",det.components.kpi2.find(c=>c.key==="request_reliability_pct")?.value,0,100,1);return;}
+  if(pillar==="Compliance"){const k1=det.components.kpi1;addSlider("section_1557_pct","Section 1557 documented (%)",k1.find(c=>c.key==="section_1557_pct")?.value,0,100,1);addSlider("clinical_language_pct","Clinical language documented (%)",k1.find(c=>c.key==="clinical_language_pct")?.value,0,100,1);addSlider("timestamp_integrity_pct","Timestamp integrity (%)",k1.find(c=>c.key==="timestamp_integrity_pct")?.value,0,100,1);addSlider("touchpoints_complete_pct","Touchpoints complete (%)",det.components.kpi2.find(c=>c.key==="touchpoints_complete_pct")?.value,0,100,1);return;}
+  if(pillar==="Patient Engagement"){addSlider("teachback_doc_pct","Teach-back documented (%)",det.components.kpi1.find(c=>c.key==="teachback_doc_pct")?.value,0,100,1);addSlider("discharge_concordance_pct","Discharge language concordance (%)",det.components.kpi2.find(c=>c.key==="discharge_concordance_pct")?.value,0,100,1);return;}
+  if(pillar==="Workflow Optimization"){addSlider("touchpoint_coverage_pct","Touchpoint coverage (%)",det.components.kpi1.find(c=>c.key==="touchpoint_coverage_pct")?.value,0,100,1);addSlider("timestamp_integrity_pct","Timestamp integrity (%)",det.components.kpi1.find(c=>c.key==="timestamp_integrity_pct")?.value,0,100,1);addSlider("touchpoints_complete_pct","Touchpoints complete (%)",det.components.kpi2.find(c=>c.key==="touchpoints_complete_pct")?.value,0,100,1);return;}
+  if(pillar==="Technology Innovation"){addSlider("documentation_maturity_pct","Documentation maturity composite (%)",det.components.kpi2.find(c=>c.key==="documentation_maturity_pct")?.value,0,100,1);addSlider("rework_penalty_pct","Rework penalty factor (%) — higher=better",det.components.kpi2.find(c=>c.key==="rework_penalty_pct")?.value,75,100,1);return;}
+  if(pillar==="Financial Stewardship"){addSlider("non_missed_reimb_pct","No missed reimbursement (%)",det.components.kpi2.find(c=>c.key==="non_missed_reimb_pct")?.value,0,100,1);addSlider("rework_penalty_pct","Rework penalty factor (%) — higher=better",det.components.kpi2.find(c=>c.key==="rework_penalty_pct")?.value,75,100,1);return;}
+  // fallback
+  addSlider("kpi1_override","KPI1 override (0–100)",det.kpi1,0,100,1);
+  addSlider("kpi2_override","KPI2 override (0–100)",det.kpi2,0,100,1);
+}
+function applySimulation(){
+  if(!tier3Baseline) return;
+  const sim=JSON.parse(JSON.stringify(tier3Baseline));
+  for(const pillar of Object.keys(simEdits)){
+    const edits=simEdits[pillar]||{};
+    if(!sim.pillarDetails||!sim.pillarDetails[pillar]) continue;
+    const det=sim.pillarDetails[pillar];
+    const rep=arr=>arr.map(c=>edits[c.key]!==undefined?Object.assign({},c,{value:edits[c.key]}):c);
+    det.components.kpi1=rep(det.components.kpi1); det.components.kpi2=rep(det.components.kpi2);
+    if(pillar==="Access"){const med=edits["median_delay_minutes"]??det.components.kpi1.find(c=>c.key==="median_delay_minutes")?.value,integ=edits["timestamp_integrity_pct"]??det.components.kpi1.find(c=>c.key==="timestamp_integrity_pct")?.value;const k1=clamp(delayScoreFromMedian(med)*(clamp(integ,0,100)/100),0,100),k2=clamp(edits["request_reliability_pct"]??det.components.kpi2.find(c=>c.key==="request_reliability_pct")?.value??0,0,100);det.kpi1=k1;det.kpi2=k2;sim.pillarMetrics[pillar].m1=k1;sim.pillarMetrics[pillar].m2=k2;}
+    else if(pillar==="Compliance"){const s1=edits["section_1557_pct"]??det.components.kpi1.find(c=>c.key==="section_1557_pct")?.value??0,cl=edits["clinical_language_pct"]??det.components.kpi1.find(c=>c.key==="clinical_language_pct")?.value??0,ti=edits["timestamp_integrity_pct"]??det.components.kpi1.find(c=>c.key==="timestamp_integrity_pct")?.value??0;const k1=clamp((clamp(s1,0,100)+clamp(cl,0,100)+clamp(ti,0,100))/3,0,100),k2=clamp(edits["touchpoints_complete_pct"]??det.components.kpi2.find(c=>c.key==="touchpoints_complete_pct")?.value??0,0,100);det.kpi1=k1;det.kpi2=k2;sim.pillarMetrics[pillar].m1=k1;sim.pillarMetrics[pillar].m2=k2;}
+    else if(pillar==="Patient Engagement"){const tb=edits["teachback_doc_pct"]??det.components.kpi1.find(c=>c.key==="teachback_doc_pct")?.value??0,dc=edits["discharge_concordance_pct"]??det.components.kpi2.find(c=>c.key==="discharge_concordance_pct")?.value??0;det.kpi1=clamp(tb,0,100);det.kpi2=clamp(dc,0,100);sim.pillarMetrics[pillar].m1=det.kpi1;sim.pillarMetrics[pillar].m2=det.kpi2;}
+    else if(pillar==="Workflow Optimization"){const cov=edits["touchpoint_coverage_pct"]??det.components.kpi1.find(c=>c.key==="touchpoint_coverage_pct")?.value??0,ti=edits["timestamp_integrity_pct"]??det.components.kpi1.find(c=>c.key==="timestamp_integrity_pct")?.value??0;const k1=clamp(clamp(cov,0,100)*(clamp(ti,0,100)/100),0,100),k2=clamp(edits["touchpoints_complete_pct"]??det.components.kpi2.find(c=>c.key==="touchpoints_complete_pct")?.value??0,0,100);det.kpi1=k1;det.kpi2=k2;sim.pillarMetrics[pillar].m1=k1;sim.pillarMetrics[pillar].m2=k2;}
+    else if(pillar==="Technology Innovation"){const m=edits["documentation_maturity_pct"]??det.components.kpi2.find(c=>c.key==="documentation_maturity_pct")?.value??0,rp=edits["rework_penalty_pct"]??det.components.kpi2.find(c=>c.key==="rework_penalty_pct")?.value??100;const k2=clamp(clamp(m,0,100)*(clamp(rp,75,100)/100),0,100);det.kpi2=k2;sim.pillarMetrics[pillar].m2=k2;}
+    else if(pillar==="Financial Stewardship"){const nm=edits["non_missed_reimb_pct"]??det.components.kpi2.find(c=>c.key==="non_missed_reimb_pct")?.value??0,rp=edits["rework_penalty_pct"]??det.components.kpi2.find(c=>c.key==="rework_penalty_pct")?.value??100;const k2=clamp(clamp(nm,0,100)*(clamp(rp,75,100)/100),0,100);det.kpi2=k2;sim.pillarMetrics[pillar].m2=k2;}
+    else{if(edits["kpi1_override"]!==undefined){det.kpi1=clamp(edits["kpi1_override"],0,100);sim.pillarMetrics[pillar].m1=det.kpi1;}if(edits["kpi2_override"]!==undefined){det.kpi2=clamp(edits["kpi2_override"],0,100);sim.pillarMetrics[pillar].m2=det.kpi2;}}
+  }
+  tier3Sim=sim;
+  uploadedRaw=SIM_MODE?tier3Sim.pillarMetrics:tier3Baseline.pillarMetrics;
+  renderT3Dashboard();
+}
+function populateFilterOptions(rows){
+  const sl=uniq(rows.map(r=>String(getField(r,"service_line")??"").trim()).filter(s=>s));
+  const un=uniq(rows.map(r=>String(getField(r,"unit_id")??"").trim()).filter(s=>s));
+  const ex=uniq(rows.map(r=>(String(getField(r,"exemplar_name")??"").trim()||String(getField(r,"diagnosis_category")??"").trim())).filter(s=>s));
+  function setOpts(sel,opts,incAll=true){ const prev=sel.value||"All"; sel.innerHTML=""; if(incAll){const o=document.createElement("option");o.value="All";o.textContent="All";sel.appendChild(o);} opts.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;sel.appendChild(o);}); const has=Array.from(sel.options).some(o=>o.value===prev); sel.value=has?prev:(incAll?"All":(opts[0]||"")); }
+  const fsl=document.getElementById("flt_service_line"),fun=document.getElementById("flt_unit_id"),fex=document.getElementById("flt_exemplar"),ca=document.getElementById("cmp_a"),cb=document.getElementById("cmp_b");
+  if(fsl) setOpts(fsl,sl,true); if(fun) setOpts(fun,un,true); if(fex) setOpts(fex,ex,true);
+  if(ca){ ca.innerHTML=""; ["All",...sl].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;ca.appendChild(o);}); if(sl.length)ca.value=sl[0]; }
+  if(cb){ cb.innerHTML=""; ["All",...sl].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;cb.appendChild(o);}); if(sl.length)cb.value=sl[1]||sl[0]; }
+}
+function subsetRowsEx(rows,sl,uid,ex){ return rows.filter(r=>{ const rs=String(getField(r,"service_line")??"").trim(),ru=String(getField(r,"unit_id")??"").trim(),re=(String(getField(r,"exemplar_name")??"").trim()||String(getField(r,"diagnosis_category")??"").trim()); return((!sl||sl==="All")||rs===sl)&&((!uid||uid==="All")||ru===uid)&&((!ex||ex==="All")||re===ex); }); }
+function runServiceLineComparison(){
+  const tbl=document.getElementById("t3_compare_table"); if(!tbl)return;
+  if(!window.__lastRows){ tbl.innerHTML="<tr><th>Pillar</th><th>A</th><th>B</th><th>Δ</th></tr><tr><td colspan='4'>Upload an encounter-level dataset.</td></tr>"; return; }
+  const cA=document.getElementById("cmp_a")?.value||"All",cB=document.getElementById("cmp_b")?.value||"All";
+  const rA=subsetRowsEx(window.__lastRows,cA,tier3Filter.unit_id,tier3Filter.exemplar);
+  const rB=subsetRowsEx(window.__lastRows,cB,tier3Filter.unit_id,tier3Filter.exemplar);
+  const compA=computeFromEncounterRows(rA),compB=computeFromEncounterRows(rB);
+  let html=`<tr><th>Pillar</th><th>${cA} (n=${rA.length})</th><th>${cB} (n=${rB.length})</th><th>Δ (A−B)</th></tr>`;
+  for(const p of PILLAR_ORDER){
+    const aS=clamp((METRICS[p].weights[0]*compA.pillarMetrics[p].m1)+(METRICS[p].weights[1]*compA.pillarMetrics[p].m2),0,100);
+    const bS=clamp((METRICS[p].weights[0]*compB.pillarMetrics[p].m1)+(METRICS[p].weights[1]*compB.pillarMetrics[p].m2),0,100);
+    const d=aS-bS;
+    html+=`<tr><td>${p}</td><td>${aS.toFixed(0)}</td><td>${bS.toFixed(0)}</td><td class="delta ${d>=0?"pos":"neg"}">${(d>=0?"+":"")+d.toFixed(0)}</td></tr>`;
+  }
+  tbl.innerHTML=html;
+}
+function renderRevenueAtRisk(rows){
+  const tbl=document.getElementById("revenue_risk_table"),note=document.getElementById("revenue_risk_note"); if(!tbl)return;
+  const A={cc:Number(document.getElementById("risk_amt_cc")?.value||250),teach:Number(document.getElementById("risk_amt_teach")?.value||60),ccm:Number(document.getElementById("risk_amt_ccm")?.value||45),tcm:Number(document.getElementById("risk_amt_tcm")?.value||90)};
+  if(!rows||!rows.length){tbl.innerHTML="<tr><th>Domain</th><th>Eligible</th><th>Incomplete</th><th>Rate</th><th>$/enc</th><th>Est. $ at risk</th></tr><tr><td colspan='6'>Upload encounter data.</td></tr>";return;}
+  const domains=[];
+  {let e=0,i=0;for(const r of rows){if(yn(getField(r,"has_99291"))!==1)continue;e++;const ok=yn(getField(r,"critical_care_met_definition_documented"))===1&&yn(getField(r,"critical_care_activities_documented"))===1&&num(getField(r,"critical_care_time_minutes_documented"))!==null;if(!ok)i++;}domains.push({name:"Critical care (99291)",e,i,amt:A.cc});}
+  {let e=0,i=0;for(const r of rows){if(!(yn(getField(r,"has_gc"))===1||yn(getField(r,"has_ge"))===1))continue;e++;if(yn(getField(r,"doc_teaching_attestation_complete"))!==1)i++;}domains.push({name:"Teaching attestation (GC/GE)",e,i,amt:A.teach});}
+  {let e=0,i=0;for(const r of rows){if(yn(getField(r,"has_ccm"))!==1)continue;e++;const ok=yn(getField(r,"ccm_patient_consent_documented"))===1&&yn(getField(r,"ccm_care_plan_documented"))===1&&num(getField(r,"ccm_time_minutes_documented"))!==null;if(!ok)i++;}domains.push({name:"CCM completeness",e,i,amt:A.ccm});}
+  {let e=0,i=0;for(const r of rows){if(yn(getField(r,"has_tcm"))!==1)continue;e++;const ok=yn(getField(r,"tcm_discharge_date_documented"))===1&&yn(getField(r,"tcm_interactive_contact_made"))===1&&yn(getField(r,"tcm_face_to_face_visit_completed"))===1;if(!ok)i++;}domains.push({name:"TCM completeness",e,i,amt:A.tcm});}
+  let total=0,html="<tr><th>Domain</th><th>Eligible</th><th>Incomplete</th><th>Incomplete Rate</th><th>$/enc</th><th>Est. $ at risk</th></tr>";
+  for(const d of domains){const rate=d.e>0?d.i/d.e:0,risk=d.i*d.amt;total+=risk;html+=`<tr><td>${d.name}</td><td>${d.e.toLocaleString()}</td><td>${d.i.toLocaleString()}</td><td>${(rate*100).toFixed(0)}%</td><td>$${d.amt}</td><td>$${risk.toLocaleString()}</td></tr>`;}
+  html+=`<tr><td colspan="5"><strong>Total estimated revenue-at-risk</strong></td><td style="font-weight:700;">$${total.toLocaleString()}</td></tr>`;
+  tbl.innerHTML=html;
+  if(note) note.textContent=`Scope: ${rows.length.toLocaleString()} encounters · Educational estimate only.`;
+}
+function renderCodingRisk(rows){
+  const tbl=document.getElementById("coding_risk_table"),corr=document.getElementById("coding_corr_table"); if(!tbl)return;
+  if(!rows||!rows.length){tbl.innerHTML="<tr><th>Indicator</th><th>Good doc rate</th><th>Risk</th></tr><tr><td colspan='3'>Upload encounter data.</td></tr>";if(corr)corr.innerHTML="<tr><th>Correlation</th><th>r</th></tr><tr><td colspan='2'>—</td></tr>";return;}
+  const doc=rows.map(r=>yn(getField(r,"doc_em_mdm_time_complete"))).filter(v=>v!==null);
+  const docPct=doc.length?100*(doc.reduce((s,v)=>s+(v||0),0)/doc.length):null;
+  let teachPct=null;{let sw=0,sx=0;for(const r of rows){if(!(yn(getField(r,"has_gc"))===1||yn(getField(r,"has_ge"))===1))continue;sw++;sx+=(yn(getField(r,"doc_teaching_attestation_complete"))===1?1:0);}teachPct=sw>0?100*(sx/sw):null;}
+  let ccPct=null;{let sw=0,sx=0;for(const r of rows){if(yn(getField(r,"has_99291"))!==1)continue;sw++;const ok=yn(getField(r,"critical_care_met_definition_documented"))===1&&yn(getField(r,"critical_care_activities_documented"))===1&&num(getField(r,"critical_care_time_minutes_documented"))!==null;sx+=ok?1:0;}ccPct=sw>0?100*(sx/sw):null;}
+  const signals=[{name:"E/M defensibility complete",v:docPct},{name:"Teaching attestation complete (GC/GE)",v:teachPct},{name:"Critical care docs sufficient (99291)",v:ccPct}];
+  let sh="<tr><th>Indicator</th><th>Good doc rate</th><th>Risk</th></tr>";
+  let sw=0,sx=0;
+  for(const s of signals){if(s.v===null)continue;sw+=1;sx+=(100-clamp(s.v,0,100));sh+=`<tr><td>${s.name}</td><td>${s.v.toFixed(0)}%</td><td>${(100-s.v).toFixed(0)}</td></tr>`;}
+  if(sw>0) sh+=`<tr><td colspan="3"><strong>Composite Revenue Risk Index: ${(sx/sw).toFixed(0)}/100</strong></td></tr>`;
+  tbl.innerHTML=sh;
+  if(corr){
+    const tasks=rows.map(r=>num(getField(r,"attendant_tasks_count"))),delay=rows.map(r=>num(getField(r,"interpreter_delay_minutes")));
+    const di=rows.map(r=>{const a=yn(getField(r,"doc_em_mdm_time_complete")),b=yn(getField(r,"mdm_data_review_documents_present"));const arr=[a,b].filter(v=>v!==null);return arr.length?100*arr.reduce((s,v)=>s+v,0)/arr.length:null;});
+    const r1=pearson(di,tasks),r2=pearson(delay,tasks);
+    const fmt=r=>r===null?"—":(Math.round(r*100)/100).toFixed(2);
+    corr.innerHTML=`<tr><th>Correlation</th><th>r</th><th>Interpretation</th></tr>
+      <tr><td>Documentation completeness vs rework</td><td>${fmt(r1)}</td><td style="font-size:11.5px;">${r1===null?"—":r1<0?"Better documentation → less rework.":"Higher documentation → more rework (check workflow)."}</td></tr>
+      <tr><td>Interpreter delay vs rework</td><td>${fmt(r2)}</td><td style="font-size:11.5px;">${r2===null?"—":r2>0?"More delay → more rework.":"Less delay → more rework (check context)."}</td></tr>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILE UPLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleFile(file){
+  if(!file) return;
+  const ext=file.name.toLowerCase().split(".").pop();
+  if(ext==="csv"){
+    // CSV: pre-aggregated pillar metrics
+    const text=await file.text();
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    const headers=lines[0].split(",").map(h=>h.replace(/^"|"$/g,"").trim());
+    const idx=n=>headers.findIndex(h=>normKey(h)===normKey(n));
+    const iP=idx("pillar_name"),i1=idx("metric_1_value"),i2=idx("metric_2_value");
+    if(iP<0||i1<0||i2<0){showToast("err","CSV missing required columns: pillar_name, metric_1_value, metric_2_value.");return;}
+    const mapped={};
+    for(let i=1;i<lines.length;i++){const parts=lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)||[];const get=j=>(parts[j]??"").replace(/^"|"$/g,"").trim();const pn=get(iP);const match=PILLAR_ORDER.find(p=>p.toLowerCase()===pn.toLowerCase());if(!match)continue;mapped[match]={m1:Number(get(i1)),m2:Number(get(i2))}}
+    const missing=PILLAR_ORDER.filter(p=>!mapped[p]);
+    if(missing.length){showToast("err",`Missing pillars: ${missing.join(", ")}`);return;}
+    uploadedRaw=mapped;setMode_("upload","Tier 3 pre-aggregated CSV");
+    setText("us_text",`Loaded: ${file.name}`);setHTML("us_meta","Pre-aggregated pillar metrics");
+    document.getElementById("btn_clear_upload").disabled=false;
+    setT3Mode(true);updateAll();showToast("ok","Tier 3 loaded from pre-aggregated CSV.");
+    return;
+  }
+  if(typeof XLSX==="undefined"){showToast("err","Excel library did not load. Try a CSV.");return;}
+  let wb;
+  try{ const buf=await file.arrayBuffer(); wb=XLSX.read(buf,{type:"array"}); }catch(e){showToast("err",`Could not read file: ${e}`);return;}
+  const sl=wb.SheetNames.map(n=>[n,n.trim().toLowerCase()]);
+  const enc=sl.find(([n,l])=>l==="encounter_level_data");
+  const agg=sl.find(([n,l])=>l==="lai_pillar_metrics");
+  if(enc){
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[enc[0]],{defval:""});
+    window.__lastRows=rows;
+    try{populateFilterOptions(rows);}catch(e){}
+    const computed=computeFromEncounterRows(rows);
+    tier3Baseline=computed;tier3Sim=null;simEdits={};
+    uploadedRaw=computed.pillarMetrics;
+    setMode_("upload","Tier 3 auto-compute from Encounter_Level_Data");
+    setText("us_text",`Encounter dataset: ${file.name}`);
+    setHTML("us_meta",` • ${rows.length.toLocaleString()} encounters • Period: ${computed.meta.reporting_period||"—"}`);
+    document.getElementById("btn_clear_upload").disabled=false;
+    // Populate T3 pillar select
+    const sel=document.getElementById("t3_pillar_select");
+    if(sel&&!sel.options.length){ PILLAR_ORDER.forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;sel.appendChild(o);}); sel.addEventListener("change",renderT3Drilldown); }
+    setT3Mode(true);updateAll();renderRevenueAtRisk(rows);renderCodingRisk(rows);
+    showToast("ok",`Tier 3 computed from ${rows.length.toLocaleString()} encounters. Drilldown, simulator, and comparison tools are now active.`);
+    return;
+  }
+  if(agg){
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[agg[0]],{defval:""});
+    const first=rows[0]||{},cols=Object.keys(first);
+    const fc=n=>cols.find(c=>normKey(c)===normKey(n));
+    const cP=fc("pillar_name"),c1=fc("metric_1_value"),c2=fc("metric_2_value");
+    if(!cP||!c1||!c2){showToast("err",`LAI_Pillar_Metrics missing columns. Found: ${cols.join(", ")}`);return;}
+    const mapped={};
+    for(const r of rows){const name=String(r[cP]??"").trim();if(!name)continue;const match=PILLAR_ORDER.find(p=>p.toLowerCase()===name.toLowerCase());if(!match)continue;mapped[match]={m1:Number(r[c1]),m2:Number(r[c2])};}
+    const missing=PILLAR_ORDER.filter(p=>!mapped[p]);
+    if(missing.length){showToast("err",`Missing pillars: ${missing.join(", ")}`);return;}
+    uploadedRaw=mapped;setMode_("upload","Tier 3 pre-aggregated XLSX");
+    setText("us_text",`Loaded: ${file.name}`);setHTML("us_meta","Pre-aggregated LAI_Pillar_Metrics");
+    document.getElementById("btn_clear_upload").disabled=false;
+    setT3Mode(true);updateAll();showToast("ok","Tier 3 loaded from pre-aggregated worksheet.");
+    return;
+  }
+  showToast("err",`Workbook does not contain Encounter_Level_Data or LAI_Pillar_Metrics. Found: ${wb.SheetNames.join(", ")}`);
+}
+function setMode_(mode,label){
+  MODE=mode;
+  document.getElementById("hdr_mode").textContent=`Mode: ${label}`;
+  document.getElementById("hdr_mode").classList.toggle("t3",mode==="upload");
+  setManualEnabled(mode!=="upload");
+}
+function setManualEnabled(on){
+  for(const p of PILLAR_ORDER) for(const k of["m1","m2"]){const el=document.getElementById(`${slugify(p)}__${k}`);if(el)el.disabled=!on;}
+  const rb=document.getElementById("btn_reset");if(rb)rb.disabled=!on;
+}
+function clearUpload(){
+  uploadedRaw=null;tier3Baseline=null;tier3Sim=null;simEdits={};SIM_MODE=false;window.__lastRows=null;
+  document.getElementById("file_input").value="";
+  document.getElementById("btn_clear_upload").disabled=true;
+  setText("us_text","No file loaded — showing Tier 1 proxy scores");
+  setHTML("us_meta","");
+  setMode_("manual","Manual (Tier 1 proxy)");
+  setT3Mode(false);
+  resetDefaults();
+  showToast("ok","Upload cleared. Back to Tier 1 proxy mode.");
+}
+function downloadTemplate(){
+  const header=["pillar_name","metric_1_value","metric_2_value","denominator","reporting_period"];
+  const rows=[header.join(",")];
+  for(const p of PILLAR_ORDER) rows.push([`"${p}"`,50,50,100,`"Q1 2026"`].join(","));
+  const blob=new Blob([rows.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="LAI_Pillar_Metrics_template.csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTROLS
+// ─────────────────────────────────────────────────────────────────────────────
+function resetDefaults(){
+  for(const p of PILLAR_ORDER) for(const k of["m1","m2"]){const spec=METRICS[p][k];const el=document.getElementById(`${slugify(p)}__${k}`);if(!el)continue;if(spec.input==="band")el.value=spec.default??spec.bands[0][0];else if(spec.input==="likert")el.value=spec.default??3;else el.value=spec.default??50;}
+  updateAll();
+}
+function exportScoresCSV(){
+  const{lai,pillarScores}=compute();
+  const rows=[["Metric","Score"],["LAI",lai.toFixed(2)],...PILLAR_ORDER.map(p=>[p,pillarScores[p].toFixed(2)])];
+  const csv=rows.map(r=>r.map(v=>String(v).replaceAll('"','""')).map(v=>`"${v}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="lai_scores.csv";document.body.appendChild(a);a.click();a.remove();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WIRE EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
+function setView(v){
+  document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+  document.querySelectorAll(".htab").forEach(el=>el.classList.remove("active"));
+  document.getElementById("view_"+v).classList.add("active");
+  document.getElementById("tab_"+v).classList.add("active");
+  if(v==="t2") renderT2();
+  if(v==="t3") renderT3Dashboard();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function init(){
+  buildPillars();
+  buildT2();
+  // Pillar nav T2 scores need to be populated after first compute
+  document.querySelectorAll(".htab").forEach(btn=>btn.addEventListener("click",()=>setView(btn.dataset.view)));
+  document.getElementById("btn_reset").addEventListener("click",resetDefaults);
+  document.getElementById("btn_expand").addEventListener("click",()=>document.querySelectorAll(".pillar").forEach(p=>p.classList.add("open")));
+  document.getElementById("btn_collapse").addEventListener("click",()=>document.querySelectorAll(".pillar").forEach(p=>p.classList.remove("open")));
+  document.getElementById("btn_export_csv").addEventListener("click",exportScoresCSV);
+  document.getElementById("btn_t2_to_t3").addEventListener("click",()=>setView("t3"));
+  document.getElementById("btn_t2_clear").addEventListener("click",()=>{ const p=t2ActivePillar; t2Responses[p]=TIER2_PROMPTS[p].map(()=>""); renderT2(); });
+  document.getElementById("file_input").addEventListener("change",e=>{const f=e.target.files[0];if(f)handleFile(f);});
+  document.getElementById("btn_clear_upload").addEventListener("click",clearUpload);
+  document.getElementById("btn_apply_filters").addEventListener("click",()=>{
+    if(!window.__lastRows){showToast("err","Upload an encounter-level dataset first.");return;}
+    tier3Filter.service_line=document.getElementById("flt_service_line").value||"All";
+    tier3Filter.unit_id=document.getElementById("flt_unit_id").value||"All";
+    tier3Filter.exemplar=document.getElementById("flt_exemplar").value||"All";
+    const rows=subsetRowsEx(window.__lastRows,tier3Filter.service_line,tier3Filter.unit_id,tier3Filter.exemplar);
+    const computed=computeFromEncounterRows(rows);
+    tier3Baseline=computed;tier3Sim=null;simEdits={};uploadedRaw=computed.pillarMetrics;
+    setMode_("upload","Tier 3 auto-compute (filtered)");
+    setText("us_text","Encounter dataset active (filtered)");
+    setHTML("us_meta",` • SL: ${tier3Filter.service_line} · Unit: ${tier3Filter.unit_id} · Exemplar: ${tier3Filter.exemplar} · n=${rows.length.toLocaleString()}`);
+    updateAll();renderT3Dashboard();runServiceLineComparison();renderRevenueAtRisk(rows);renderCodingRisk(rows);
+  });
+  document.getElementById("btn_clear_filters").addEventListener("click",()=>{
+    if(!window.__lastRows){showToast("err","Upload an encounter-level dataset first.");return;}
+    tier3Filter={service_line:"All",unit_id:"All",exemplar:"All"};
+    ["flt_service_line","flt_unit_id","flt_exemplar"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="All";});
+    const computed=computeFromEncounterRows(window.__lastRows);
+    tier3Baseline=computed;tier3Sim=null;simEdits={};uploadedRaw=computed.pillarMetrics;
+    setMode_("upload","Tier 3 auto-compute from Encounter_Level_Data");
+    setText("us_text",`Encounter dataset: reloaded (all)`);
+    updateAll();renderT3Dashboard();runServiceLineComparison();renderRevenueAtRisk(window.__lastRows);renderCodingRisk(window.__lastRows);
+  });
+  document.getElementById("btn_run_compare").addEventListener("click",runServiceLineComparison);
+  document.getElementById("btn_recalc_risk").addEventListener("click",()=>{renderRevenueAtRisk(window.__lastRows||[]);renderCodingRisk(window.__lastRows||[]);});
+  document.getElementById("chk_advanced_mode").addEventListener("change",()=>{
+    if(MODE!=="upload"||!window.__lastRows)return;
+    const rows=subsetRowsEx(window.__lastRows,tier3Filter.service_line,tier3Filter.unit_id,tier3Filter.exemplar);
+    const computed=computeFromEncounterRows(rows);
+    tier3Baseline=computed;if(SIM_MODE)applySimulation();else uploadedRaw=computed.pillarMetrics;
+    updateAll();renderT3Dashboard();
+    showToast("ok",`Advanced Case Mode ${document.getElementById("chk_advanced_mode").checked?"ON":"OFF"} — Tier 3 recomputed.`);
+  });
+  document.getElementById("chk_sim_mode").addEventListener("change",()=>{
+    SIM_MODE=document.getElementById("chk_sim_mode").checked;
+    const badge=document.getElementById("sim_badge"),chip=document.getElementById("sim_chip");
+    if(badge){badge.textContent=SIM_MODE?"SIM ON":"SIM OFF";badge.classList.toggle("on",SIM_MODE);badge.classList.toggle("off",!SIM_MODE);}
+    if(chip) chip.classList.toggle("active",SIM_MODE);
+    if(!tier3Baseline&&SIM_MODE){SIM_MODE=false;document.getElementById("chk_sim_mode").checked=false;showToast("err","Simulation requires an encounter-level upload.");return;}
+    if(SIM_MODE){applySimulation();showToast("ok","Simulation Mode ON — adjust component sliders below to model improvements.");}
+    else{uploadedRaw=tier3Baseline?tier3Baseline.pillarMetrics:uploadedRaw;updateAll();renderT3Dashboard();}
+  });
+  document.getElementById("btn_sim_reset").addEventListener("click",()=>{
+    simEdits={};tier3Sim=null;if(tier3Baseline){uploadedRaw=tier3Baseline.pillarMetrics;}
+    updateAll();renderT3Dashboard();showToast("ok","Simulation reset to baseline.");
+  });
+  // Upload zone drag-drop
+  const uz=document.getElementById("upload_zone");
+  uz.addEventListener("dragover",e=>{e.preventDefault();uz.classList.add("drag");});
+  uz.addEventListener("dragleave",()=>uz.classList.remove("drag"));
+  uz.addEventListener("drop",e=>{e.preventDefault();uz.classList.remove("drag");const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+  // Init t3 pillar select
+  const sel=document.getElementById("t3_pillar_select");
+  PILLAR_ORDER.forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=p;sel.appendChild(o);});
+  sel.addEventListener("change",renderT3Drilldown);
+  // Empty state tables
+  renderRevenueAtRisk([]);renderCodingRisk([]);
+  document.getElementById("t3_compare_table").innerHTML="<tr><th>Pillar</th><th>A</th><th>B</th><th>Δ</th></tr><tr><td colspan='4'>Upload an encounter-level dataset to enable comparison.</td></tr>";
+  resetDefaults();
+}
+window.addEventListener("DOMContentLoaded",init);
+window.addEventListener("load",()=>{try{updateAll();}catch(e){}});
+</script>
+</body>
+</html>
